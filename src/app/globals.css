@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #1c1b19;
+  --surface: #242220;
+  --surface-raised: #2b2925;
+  --hairline: #3a3730;
+  --ink: #ede8de;
+  --ink-muted: #a39a8c;
+  --ink-faint: #6f665a;
+  --amber: #e8a33d;
+  --sage: #7a9a7e;
+  --sage-dim: #4d5f4f;
+  --danger: #c1654f;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--amber);
+  color: #1c1b19;
+}
+
+/* Custom checkbox: a hand-drawn-feeling square that fills like a stamp */
+.check-box {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  min-width: 1.15rem;
+  border: 1.5px solid var(--ink-faint);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.check-box:hover {
+  border-color: var(--amber);
+}
+
+.check-box:checked {
+  background: var(--sage-dim);
+  border-color: var(--sage);
+}
+
+.check-box:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: -1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--sage);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.check-box.sub {
+  width: 0.95rem;
+  height: 0.95rem;
+  min-width: 0.95rem;
+}
+
+.check-box.sub:checked::after {
+  left: 2px;
+  top: -1px;
+  width: 4px;
+  height: 7px;
+}
