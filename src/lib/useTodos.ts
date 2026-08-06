@@ -1,88 +1,145 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import useSWR from "swr";
 import type { Todo } from "./types";
-import { syncLocalStorageToRedis, hasLocalData, getTodos as getLocalTodos } from "./store";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { syncLocalStorageToRedis, hasLocalData, getTodos as getStoredTodos, saveTodos as saveStoredTodos } from "./store";
+import { isRedisConfigured } from "./redis";
 
 export function useTodos() {
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [isSyncing, setIsSyncing] = useState(true); // Start as true until sync completes
-  const [synced, setSynced] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
-  // Sync localStorage to Redis on mount if Redis is configured and there's local data
+  const loadTodos = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const storedTodos = await getStoredTodos();
+      setTodos(storedTodos);
+      setError(null);
+    } catch (e) {
+      console.error("Failed to load todos:", e);
+      setError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodos();
+  }, [loadTodos]);
+
   useEffect(() => {
     async function performSync() {
       try {
-        if (hasLocalData()) {
+        if (isRedisConfigured() && hasLocalData()) {
           setIsSyncing(true);
           await syncLocalStorageToRedis();
+          const syncedTodos = await getStoredTodos();
+          setTodos(syncedTodos);
         }
-        setSynced(true);
       } catch (e) {
         console.error("Failed to sync localStorage to Redis:", e);
-        // Even on error, mark as synced to avoid infinite loading
-        setSynced(true);
       } finally {
         setIsSyncing(false);
         setLastSync(new Date());
       }
     }
-    
+
     performSync();
   }, []);
 
-  const { data, error, isLoading, mutate } = useSWR<{ todos: Todo[] }>(
-    synced ? "/api/todos" : null, // Only fetch after sync is complete
-    fetcher,
-    {
-      refreshInterval: 3000, // poll every 3s so other devices see updates
-      revalidateOnFocus: true,
-      dedupingInterval: 500,
-      // Fires whenever a fetch (polled or manual) resolves — this is the
-      // "external system" updating us, so setState here is fine.
-      onSuccess: () => setLastSync(new Date()),
-    }
-  );
+  const persistTodos = useCallback(async (nextTodos: Todo[]) => {
+    await saveStoredTodos(nextTodos);
+    setTodos(nextTodos);
+  }, []);
 
-  const todos = data?.todos ?? [];
+  const useRemoteStore = isRedisConfigured();
 
   async function addTodo(text: string) {
+    const newTodo: Todo = {
+      id: crypto.randomUUID(),
+      text,
+      done: false,
+      createdAt: Date.now(),
+      subtodos: [],
+    };
+
+    if (!useRemoteStore) {
+      const nextTodos = [newTodo, ...todos].sort((a, b) => b.createdAt - a.createdAt);
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   async function updateTodo(id: string, patch: { text?: string; done?: boolean }) {
+    if (!useRemoteStore) {
+      const nextTodos = todos.map((todo) => {
+        if (todo.id !== id) return todo;
+        return {
+          ...todo,
+          ...patch,
+          subtodos: patch.done === undefined ? todo.subtodos : todo.subtodos.map((sub) => ({ ...sub, done: patch.done ?? sub.done })),
+        };
+      });
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch(`/api/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   async function deleteTodo(id: string) {
+    if (!useRemoteStore) {
+      const nextTodos = todos.filter((todo) => todo.id !== id);
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   async function addSubTodo(todoId: string, text: string) {
+    if (!useRemoteStore) {
+      const nextTodos = todos.map((todo) => {
+        if (todo.id !== todoId) return todo;
+        return {
+          ...todo,
+          subtodos: [...todo.subtodos, { id: crypto.randomUUID(), text, done: false, createdAt: Date.now() }],
+        };
+      });
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch(`/api/todos/${todoId}/subtodos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   async function updateSubTodo(
@@ -90,21 +147,47 @@ export function useTodos() {
     subId: string,
     patch: { text?: string; done?: boolean }
   ) {
+    if (!useRemoteStore) {
+      const nextTodos = todos.map((todo) => {
+        if (todo.id !== todoId) return todo;
+        return {
+          ...todo,
+          subtodos: todo.subtodos.map((sub) => (sub.id === subId ? { ...sub, ...patch } : sub)),
+        };
+      });
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   async function deleteSubTodo(todoId: string, subId: string) {
+    if (!useRemoteStore) {
+      const nextTodos = todos.map((todo) => {
+        if (todo.id !== todoId) return todo;
+        return {
+          ...todo,
+          subtodos: todo.subtodos.filter((sub) => sub.id !== subId),
+        };
+      });
+      await persistTodos(nextTodos);
+      return;
+    }
+
     const res = await fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
       method: "DELETE",
     });
     const json = await res.json();
-    mutate(json, { revalidate: false });
+    const nextTodos = (json?.todos as Todo[]) ?? [];
+    setTodos(nextTodos);
   }
 
   return {
