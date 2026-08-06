@@ -22,8 +22,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Việc hôm nay | Today's Tasks",
-  description: "Danh sách việc cần làm hàng ngày, đồng bộ giữa các máy | Daily task list, synced across devices",
+    title: "Việc hôm nay | Today's Tasks",
+    description: "Danh sách việc cần làm hàng ngày, đồng bộ giữa các máy | Daily task list, synced across devices",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
