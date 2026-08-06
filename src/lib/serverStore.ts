@@ -1,7 +1,7 @@
 import type { Todo } from "./types";
 
 const REDIS_KEY = "daily-todos:list";
-const DEFAULT_DATA_FILE = "data.json";
+const DEFAULT_DATA_FILE = process.env.VERCEL ? "/tmp/todos-data.json" : "data.json";
 
 async function getDataFilePath(): Promise<string | null> {
   const explicitPath = process.env.TODOS_DATA_FILE;
@@ -11,6 +11,10 @@ async function getDataFilePath(): Promise<string | null> {
 
   if (typeof process === "undefined" || typeof process.cwd !== "function") {
     return null;
+  }
+
+  if (process.env.VERCEL || process.env.NEXT_RUNTIME) {
+    return DEFAULT_DATA_FILE;
   }
 
   const pathModule = await import("node:path");
