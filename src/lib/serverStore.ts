@@ -1,7 +1,7 @@
 import type { Todo } from "./types";
 
 const REDIS_KEY = "daily-todos:list";
-const DEFAULT_DATA_FILE = ".todos-data.json";
+const DEFAULT_DATA_FILE = "data.json";
 
 async function getDataFilePath(): Promise<string | null> {
   const explicitPath = process.env.TODOS_DATA_FILE;
