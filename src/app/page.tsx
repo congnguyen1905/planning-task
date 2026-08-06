@@ -21,7 +21,6 @@ export default function Home() {
   const { language, t } = useLanguage();
   const {
     todos,
-    isLoading,
     lastSync,
     addTodo,
     updateTodo,
@@ -62,9 +61,7 @@ export default function Home() {
           <AddTodoForm onAdd={addTodo} />
         </div>
 
-        {isLoading && todos.length === 0 ? (
-          <p className="text-[var(--ink-faint)] text-sm font-mono">{t("loading")}</p>
-        ) : todos.length === 0 ? (
+        {todos.length === 0 ? (
           <p className="text-[var(--ink-faint)] text-sm italic">
             {t("empty_state")}
           </p>

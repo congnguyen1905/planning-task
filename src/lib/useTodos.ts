@@ -24,23 +24,29 @@ function mergeTodos(localTodos: Todo[], remoteTodos: Todo[]): Todo[] {
   return Array.from(mergedMap.values()).sort((a, b) => b.createdAt - a.createdAt);
 }
 
+function areTodoListsEqual(left: Todo[], right: Todo[]): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+
+  const setTodosIfChanged = useCallback((nextTodos: Todo[]) => {
+    setTodos((currentTodos) => (areTodoListsEqual(currentTodos, nextTodos) ? currentTodos : nextTodos));
+  }, []);
 
   const persistTodos = useCallback(async (nextTodos: Todo[]) => {
     await saveStoredTodos(nextTodos);
-    setTodos(nextTodos);
-  }, []);
+    setTodosIfChanged(nextTodos);
+  }, [setTodosIfChanged]);
 
   const loadTodos = useCallback(async () => {
-    setIsLoading(true);
     try {
       const localTodos = await getStoredTodos();
-      setTodos(localTodos);
+      setTodosIfChanged(localTodos);
       setError(null);
 
       const res = await fetch("/api/todos");
@@ -51,17 +57,20 @@ export function useTodos() {
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
       const mergedTodos = mergeTodos(localTodos, serverTodos);
-      await saveStoredTodos(mergedTodos);
-      setTodos(mergedTodos);
+
+      if (!areTodoListsEqual(localTodos, mergedTodos)) {
+        await saveStoredTodos(mergedTodos);
+      }
+
+      setTodosIfChanged(mergedTodos);
       setLastSync(new Date());
     } catch (e) {
       console.error("Failed to load todos:", e);
       setError(e);
     } finally {
-      setIsLoading(false);
       setIsSyncing(false);
     }
-  }, []);
+  }, [setTodosIfChanged]);
 
   useEffect(() => {
     loadTodos();
@@ -93,8 +102,10 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo to server:", e);
       setError(e);
@@ -123,8 +134,10 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo update to server:", e);
       setError(e);
@@ -139,8 +152,10 @@ export function useTodos() {
       const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo delete to server:", e);
       setError(e);
@@ -166,8 +181,10 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask to server:", e);
       setError(e);
@@ -197,8 +214,10 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask update to server:", e);
       setError(e);
@@ -222,8 +241,10 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      await saveStoredTodos(serverTodos);
-      setTodos(serverTodos);
+      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
+        await saveStoredTodos(serverTodos);
+      }
+      setTodosIfChanged(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask delete to server:", e);
       setError(e);
@@ -232,7 +253,6 @@ export function useTodos() {
 
   return {
     todos,
-    isLoading,
     error,
     lastSync,
     isSyncing,
