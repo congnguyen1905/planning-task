@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const display = Fraunces({
   variable: "--font-display",
@@ -21,8 +22,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Việc hôm nay",
-  description: "Danh sách việc cần làm hàng ngày, đồng bộ giữa các máy",
+  title: "Việc hôm nay | Today's Tasks",
+  description: "Danh sách việc cần làm hàng ngày, đồng bộ giữa các máy | Daily task list, synced across devices",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,7 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="vi"
       className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

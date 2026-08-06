@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function AddTodoForm({ onAdd }: { onAdd: (text: string) => void }) {
+  const { t } = useLanguage();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -25,7 +27,7 @@ export function AddTodoForm({ onAdd }: { onAdd: (text: string) => void }) {
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Thêm việc cần làm hôm nay…"
+        placeholder={t("add_task_placeholder")}
         className="flex-1 bg-transparent border-b border-[var(--hairline)] py-2 text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--amber)] transition-colors"
       />
       <button
@@ -33,7 +35,7 @@ export function AddTodoForm({ onAdd }: { onAdd: (text: string) => void }) {
         disabled={!text.trim() || busy}
         className="font-mono text-xs uppercase tracking-wider px-3 py-1.5 rounded-sm border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] disabled:hover:text-[var(--ink-muted)] transition-colors"
       >
-        Thêm
+        {t("add_button")}
       </button>
     </form>
   );

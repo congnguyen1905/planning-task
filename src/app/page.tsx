@@ -3,10 +3,14 @@
 import { useTodos } from "@/lib/useTodos";
 import { AddTodoForm } from "@/components/AddTodoForm";
 import { TodoRow } from "@/components/TodoRow";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-function todayLabel() {
-  const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+function todayLabel(language: "vi" | "en") {
+  const viDays = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+  const enDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const now = new Date();
+  const days = language === "vi" ? viDays : enDays;
   const day = days[now.getDay()];
   const dd = String(now.getDate()).padStart(2, "0");
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -14,6 +18,7 @@ function todayLabel() {
 }
 
 export default function Home() {
+  const { language, t } = useLanguage();
   const {
     todos,
     isLoading,
@@ -35,19 +40,20 @@ export default function Home() {
 
   return (
     <main className="flex-1 bg-[var(--bg)]">
+      <LanguageSwitcher />
       <div className="max-w-xl mx-auto px-6 py-14 sm:py-20">
         <header className="mb-10">
           <p className="font-mono text-xs uppercase tracking-[0.15em] text-[var(--amber)] mb-2">
-            {todayLabel()}
+            {todayLabel(language)}
           </p>
           <h1 className="font-display italic text-4xl text-[var(--ink)]">
-            Việc hôm nay
+            {t("app_title")}
           </h1>
           <p className="mt-2 text-sm text-[var(--ink-faint)] font-mono">
             {todos.length === 0
-              ? "chưa có việc nào"
-              : `${totalDone}/${todos.length} việc xong${
-                  lastSync ? ` · đồng bộ lúc ${lastSync.toLocaleTimeString("vi-VN")}` : ""
+              ? t("no_tasks")
+              : `${totalDone}/${todos.length} ${t("tasks_completed")}${
+                  lastSync ? ` · ${language === "vi" ? "đồng bộ lúc" : "synced at"} ${lastSync.toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US")}` : ""
                 }`}
           </p>
         </header>
@@ -57,10 +63,10 @@ export default function Home() {
         </div>
 
         {isLoading && todos.length === 0 ? (
-          <p className="text-[var(--ink-faint)] text-sm font-mono">đang tải…</p>
+          <p className="text-[var(--ink-faint)] text-sm font-mono">{t("loading")}</p>
         ) : todos.length === 0 ? (
           <p className="text-[var(--ink-faint)] text-sm italic">
-            Trống trơn. Thêm việc đầu tiên ở trên.
+            {t("empty_state")}
           </p>
         ) : (
           <div className="space-y-8">
@@ -85,7 +91,7 @@ export default function Home() {
             {done.length > 0 && (
               <section>
                 <p className="font-mono text-xs uppercase tracking-[0.15em] text-[var(--ink-faint)] mb-1">
-                  đã xong
+                  {t("completed_section")}
                 </p>
                 {done.map((todo) => (
                   <TodoRow
@@ -107,7 +113,7 @@ export default function Home() {
 
         <footer className="mt-16 text-center">
           <p className="font-mono text-[11px] text-[var(--ink-faint)]">
-            tự động đồng bộ mỗi 3 giây · mở ở máy khác cũng thấy ngay
+            {t("auto_sync")}
           </p>
         </footer>
       </div>

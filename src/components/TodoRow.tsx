@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Todo } from "@/lib/types";
 import { SubTodoRow } from "./SubTodoRow";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function TodoRow({
   todo,
@@ -19,6 +20,7 @@ export function TodoRow({
   onToggleSub: (subId: string, done: boolean) => void;
   onDeleteSub: (subId: string) => void;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(true);
   const [subText, setSubText] = useState("");
 
@@ -56,7 +58,7 @@ export function TodoRow({
           <button
             onClick={() => setOpen((v) => !v)}
             className="font-mono text-xs text-[var(--ink-faint)] hover:text-[var(--amber)] transition-colors tabular-nums"
-            aria-label="Ẩn/hiện việc con"
+            aria-label={t("toggle_subtasks")}
           >
             {doneCount}/{total} {open ? "▾" : "▸"}
           </button>
@@ -64,7 +66,7 @@ export function TodoRow({
 
         <button
           onClick={onDelete}
-          aria-label="Xóa việc"
+          aria-label={t("delete_task")}
           className="opacity-0 group-hover:opacity-100 text-[var(--ink-faint)] hover:text-[var(--danger)] text-xs font-mono transition-opacity px-1"
         >
           ✕
@@ -87,7 +89,7 @@ export function TodoRow({
             <input
               value={subText}
               onChange={(e) => setSubText(e.target.value)}
-              placeholder="thêm việc con…"
+              placeholder={t("add_subtask_placeholder")}
               className="flex-1 bg-transparent text-sm py-1 text-[var(--ink-muted)] placeholder:text-[var(--ink-faint)] focus:outline-none border-b border-transparent focus:border-[var(--hairline)] transition-colors"
             />
           </form>

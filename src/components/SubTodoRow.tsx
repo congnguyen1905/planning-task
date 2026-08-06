@@ -1,6 +1,7 @@
 "use client";
 
 import type { SubTodo } from "@/lib/types";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function SubTodoRow({
   sub,
@@ -11,6 +12,8 @@ export function SubTodoRow({
   onToggle: (done: boolean) => void;
   onDelete: () => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="group flex items-center gap-2.5 py-1.5 pl-8">
       <input
@@ -30,7 +33,7 @@ export function SubTodoRow({
       </span>
       <button
         onClick={onDelete}
-        aria-label="Xóa việc con"
+        aria-label={t("delete_subtask")}
         className="opacity-0 group-hover:opacity-100 text-[var(--ink-faint)] hover:text-[var(--danger)] text-xs font-mono transition-opacity px-1"
       >
         ✕
