@@ -1,30 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
 import type { Todo } from "./types";
-import { syncLocalStorageToRedis, hasLocalData } from "./store";
+import { syncLocalStorageToRedis, hasLocalData, getTodos as getLocalTodos } from "./store";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function useTodos() {
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true); // Start as true until sync completes
+  const [synced, setSynced] = useState(false);
 
   // Sync localStorage to Redis on mount if Redis is configured and there's local data
   useEffect(() => {
     async function performSync() {
-      if (hasLocalData()) {
-        setIsSyncing(true);
-        try {
+      try {
+        if (hasLocalData()) {
+          setIsSyncing(true);
           await syncLocalStorageToRedis();
-          // Revalidate after sync to get fresh data
-          mutate();
-        } catch (e) {
-          console.error("Failed to sync localStorage to Redis:", e);
-        } finally {
-          setIsSyncing(false);
         }
+        setSynced(true);
+      } catch (e) {
+        console.error("Failed to sync localStorage to Redis:", e);
+        // Even on error, mark as synced to avoid infinite loading
+        setSynced(true);
+      } finally {
+        setIsSyncing(false);
+        setLastSync(new Date());
       }
     }
     
@@ -32,7 +35,7 @@ export function useTodos() {
   }, []);
 
   const { data, error, isLoading, mutate } = useSWR<{ todos: Todo[] }>(
-    "/api/todos",
+    synced ? "/api/todos" : null, // Only fetch after sync is complete
     fetcher,
     {
       refreshInterval: 3000, // poll every 3s so other devices see updates
