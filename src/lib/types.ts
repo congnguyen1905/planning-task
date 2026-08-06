@@ -3,6 +3,7 @@ export interface SubTodo {
   text: string;
   done: boolean;
   createdAt: number;
+  date: string;
 }
 
 export interface Todo {
@@ -10,5 +11,6 @@ export interface Todo {
   text: string;
   done: boolean;
   createdAt: number;
+  date: string;
   subtodos: SubTodo[];
 }

@@ -19,6 +19,9 @@ export async function PATCH(
   if (typeof body.text === "string" && body.text.trim()) {
     sub.text = body.text.trim();
   }
+  if (typeof body.date === "string" && body.date.trim()) {
+    sub.date = body.date.trim();
+  }
   if (typeof body.done === "boolean") {
     sub.done = body.done;
     // If every subtask is done, mark the parent done too.

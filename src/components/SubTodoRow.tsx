@@ -7,10 +7,12 @@ export function SubTodoRow({
   sub,
   onToggle,
   onDelete,
+  onChangeDate,
 }: {
   sub: SubTodo;
   onToggle: (done: boolean) => void;
   onDelete: () => void;
+  onChangeDate: (date: string) => void;
 }) {
   const { t } = useLanguage();
 
@@ -31,6 +33,12 @@ export function SubTodoRow({
       >
         {sub.text}
       </span>
+      <input
+        type="date"
+        value={sub.date}
+        onChange={(e) => onChangeDate(e.target.value)}
+        className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+      />
       <button
         onClick={onDelete}
         aria-label={t("delete_subtask")}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Todo } from "./types";
-import { getTodos as getStoredTodos, saveTodos as saveStoredTodos } from "./store";
+import { saveTodos as saveStoredTodos } from "./store";
 
 function mergeTodos(localTodos: Todo[], remoteTodos: Todo[]): Todo[] {
   const mergedMap = new Map<string, Todo>();
@@ -101,13 +101,13 @@ export function useTodos() {
     return () => window.clearInterval(intervalId);
   }, [loadTodos]);
 
-  async function addTodo(text: string) {
+  async function addTodo(text: string, date: string) {
     isMutatingRef.current = true;
     try {
       const res = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, date }),
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
@@ -137,7 +137,7 @@ export function useTodos() {
     return (json?.todos as Todo[]) ?? [];
   }
 
-  async function updateTodo(id: string, patch: { text?: string; done?: boolean }) {
+  async function updateTodo(id: string, patch: { text?: string; done?: boolean; date?: string }) {
     isMutatingRef.current = true;
     try {
       const res = await fetch(`/api/todos/${id}`, {
@@ -171,14 +171,14 @@ export function useTodos() {
     }
   }
 
-  async function addSubTodo(todoId: string, text: string) {
+  async function addSubTodo(todoId: string, text: string, date: string) {
     isMutatingRef.current = true;
     try {
       const serverTodos = await runMutationWithRefresh(() =>
         fetch(`/api/todos/${todoId}/subtodos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, date }),
         })
       );
       await syncTodosFromServer(serverTodos);
@@ -193,7 +193,7 @@ export function useTodos() {
   async function updateSubTodo(
     todoId: string,
     subId: string,
-    patch: { text?: string; done?: boolean }
+    patch: { text?: string; done?: boolean; date?: string }
   ) {
     isMutatingRef.current = true;
     try {

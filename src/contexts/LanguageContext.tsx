@@ -42,8 +42,24 @@ const translations: Translations = {
     en: "completed",
   },
   "auto_sync": {
-    vi: "tự động đồng bộ mỗi 3 giây · mở ở máy khác cũng thấy ngay",
-    en: "auto-sync every 3 seconds · open on another device to see updates",
+    vi: "tự động đồng bộ mỗi 10 giây · mở ở máy khác cũng thấy ngay",
+    en: "auto-sync every 10 seconds · open on another device to see updates",
+  },
+  "due_date": {
+    vi: "Ngày",
+    en: "Date",
+  },
+  "filter_date": {
+    vi: "Lọc theo ngày",
+    en: "Filter by date",
+  },
+  "previous_day": {
+    vi: "Ngày trước",
+    en: "Previous day",
+  },
+  "next_day": {
+    vi: "Ngày sau",
+    en: "Next day",
   },
   // AddTodoForm
   "add_task_placeholder": {

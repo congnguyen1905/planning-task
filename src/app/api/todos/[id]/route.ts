@@ -18,6 +18,9 @@ export async function PATCH(
   if (typeof body.text === "string" && body.text.trim()) {
     todo.text = body.text.trim();
   }
+  if (typeof body.date === "string" && body.date.trim()) {
+    todo.date = body.date.trim();
+  }
   if (typeof body.done === "boolean") {
     todo.done = body.done;
     // Toggling the parent done state cascades to its subtodos.

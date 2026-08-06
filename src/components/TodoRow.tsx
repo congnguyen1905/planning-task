@@ -1,37 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Todo } from "@/lib/types";
 import { SubTodoRow } from "./SubTodoRow";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export function TodoRow({
   todo,
+  selectedDate,
   onToggle,
+  onChangeDate,
   onDelete,
   onAddSub,
   onToggleSub,
   onDeleteSub,
+  onChangeSubDate,
 }: {
   todo: Todo;
+  selectedDate: string;
   onToggle: (done: boolean) => void;
+  onChangeDate: (date: string) => void;
   onDelete: () => void;
-  onAddSub: (text: string) => void;
+  onAddSub: (text: string, date: string) => void;
   onToggleSub: (subId: string, done: boolean) => void;
   onDeleteSub: (subId: string) => void;
+  onChangeSubDate: (subId: string, date: string) => void;
 }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(true);
   const [subText, setSubText] = useState("");
+  const [subDate, setSubDate] = useState(todo.date);
 
-  const total = todo.subtodos.length;
-  const doneCount = todo.subtodos.filter((s) => s.done).length;
+  useEffect(() => {
+    setSubDate(todo.date);
+  }, [todo.date]);
+
+  const visibleSubtasks = todo.subtodos.filter(
+    (sub) => sub.date === selectedDate || todo.date === selectedDate
+  );
+  const total = visibleSubtasks.length;
+  const doneCount = visibleSubtasks.filter((s) => s.done).length;
 
   function submitSub(e: React.FormEvent) {
     e.preventDefault();
     const value = subText.trim();
     if (!value) return;
-    onAddSub(value);
+    onAddSub(value, subDate);
     setSubText("");
   }
 
@@ -54,6 +68,13 @@ export function TodoRow({
           {todo.text}
         </span>
 
+        <input
+          type="date"
+          value={todo.date}
+          onChange={(e) => onChangeDate(e.target.value)}
+          className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+        />
+
         {total > 0 && (
           <button
             onClick={() => setOpen((v) => !v)}
@@ -75,12 +96,13 @@ export function TodoRow({
 
       {open && (
         <div className="pb-2">
-          {todo.subtodos.map((sub) => (
+          {visibleSubtasks.map((sub) => (
             <SubTodoRow
               key={sub.id}
               sub={sub}
               onToggle={(done) => onToggleSub(sub.id, done)}
               onDelete={() => onDeleteSub(sub.id)}
+              onChangeDate={(date) => onChangeSubDate(sub.id, date)}
             />
           ))}
 
@@ -91,6 +113,12 @@ export function TodoRow({
               onChange={(e) => setSubText(e.target.value)}
               placeholder={t("add_subtask_placeholder")}
               className="flex-1 bg-transparent text-sm py-1 text-[var(--ink-muted)] placeholder:text-[var(--ink-faint)] focus:outline-none border-b border-transparent focus:border-[var(--hairline)] transition-colors"
+            />
+            <input
+              type="date"
+              value={subDate}
+              onChange={(e) => setSubDate(e.target.value)}
+              className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
             />
           </form>
         </div>
