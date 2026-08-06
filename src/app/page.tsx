@@ -11,6 +11,7 @@ import { addDaysToDateKey, formatDateKey, formatDateLabel } from "@/lib/date";
 export default function Home() {
   const { language, t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
+  const [useDataApi, setUseDataApi] = useState(false);
   const {
     todos,
     lastSync,
@@ -21,7 +22,7 @@ export default function Home() {
     addSubTodo,
     updateSubTodo,
     deleteSubTodo,
-  } = useTodos();
+  } = useTodos(useDataApi);
 
   const visibleTodos = todos.filter((todo) => {
     const parentMatches = todo.startDate <= selectedDate && todo.endDate >= selectedDate;
@@ -52,6 +53,15 @@ export default function Home() {
                   lastSync ? ` · ${language === "vi" ? "đồng bộ lúc" : "synced at"} ${lastSync.toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US")}` : ""
                 }`}
           </p>
+          <label className="mt-4 inline-flex items-center gap-2 text-sm text-[var(--ink-faint)]">
+            <input
+              type="checkbox"
+              checked={useDataApi}
+              onChange={(e) => setUseDataApi(e.target.checked)}
+              className="h-4 w-4 rounded border border-[var(--hairline)] bg-[var(--bg)] accent-[var(--amber)]"
+            />
+            <span>{t("use_data_api")}</span>
+          </label>
         </header>
 
         <div className="mb-6 flex items-center justify-between rounded-sm border border-[var(--hairline)] px-3 py-2">

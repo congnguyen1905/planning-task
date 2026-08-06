@@ -74,6 +74,10 @@ const translations: Translations = {
     vi: "Thêm",
     en: "Add",
   },
+  "use_data_api": {
+    vi: "Dùng API lấy data",
+    en: "Use GET data API",
+  },
   // TodoRow
   "toggle_subtasks": {
     vi: "Ẩn/hiện việc con",

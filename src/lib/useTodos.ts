@@ -28,7 +28,7 @@ function areTodoListsEqual(left: Todo[], right: Todo[]): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function useTodos() {
+export function useTodos(useDataApi = false) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(true);
@@ -54,12 +54,14 @@ export function useTodos() {
     setTodosIfChanged(serverTodos);
   }, [setTodosIfChanged]);
 
+  const apiPath = useDataApi ? "/api/data" : "/api/todos";
+
   const loadTodos = useCallback(async (isInitial = false) => {
     try {
       const currentTodos = todosRef.current;
       setError(null);
 
-      const res = await fetch("/api/todos");
+      const res = await fetch(apiPath);
       if (!res.ok) {
         return;
       }
@@ -89,7 +91,7 @@ export function useTodos() {
         setHasHydrated(true);
       }
     }
-  }, [setTodosIfChanged]);
+  }, [setTodosIfChanged, apiPath]);
 
   useEffect(() => {
     void loadTodos(true);
