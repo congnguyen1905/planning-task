@@ -8,6 +8,17 @@ const LOCAL_STORAGE_KEY = "daily-todos:list";
  * Get todos - from Redis if configured, otherwise from a server file or localStorage.
  */
 export async function getTodos(): Promise<Todo[]> {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored) as Todo[];
+      }
+    } catch (e) {
+      console.error("Error reading from localStorage:", e);
+    }
+  }
+
   if (isRedisConfigured()) {
     const redis = getRedis();
     if (redis) {
@@ -21,18 +32,6 @@ export async function getTodos(): Promise<Todo[]> {
     return getTodosFromServerStore();
   }
 
-  // Fallback to localStorage when Redis is not configured and we are in the browser.
-  if (typeof window !== "undefined") {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored) as Todo[];
-      }
-    } catch (e) {
-      console.error("Error reading from localStorage:", e);
-    }
-  }
-
   return [];
 }
 
@@ -40,6 +39,15 @@ export async function getTodos(): Promise<Todo[]> {
  * Save todos - to Redis if configured, otherwise to a server file or localStorage.
  */
 export async function saveTodos(todos: Todo[]): Promise<void> {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos));
+      return;
+    } catch (e) {
+      console.error("Error saving to localStorage:", e);
+    }
+  }
+
   if (isRedisConfigured()) {
     const redis = getRedis();
     if (redis) {
@@ -51,16 +59,6 @@ export async function saveTodos(todos: Todo[]): Promise<void> {
   if (typeof window === "undefined") {
     const { saveTodosToServerStore } = await import("./serverStore");
     await saveTodosToServerStore(todos);
-    return;
-  }
-
-  // Fallback to localStorage when Redis is not configured and we are in the browser.
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos));
-    } catch (e) {
-      console.error("Error saving to localStorage:", e);
-    }
   }
 }
 
