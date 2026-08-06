@@ -32,6 +32,7 @@ export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [hasHydrated, setHasHydrated] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
   const setTodosIfChanged = useCallback((nextTodos: Todo[]) => {
@@ -43,10 +44,9 @@ export function useTodos() {
     setTodosIfChanged(nextTodos);
   }, [setTodosIfChanged]);
 
-  const loadTodos = useCallback(async () => {
+  const loadTodos = useCallback(async (isInitial = false) => {
     try {
-      const localTodos = await getStoredTodos();
-      setTodosIfChanged(localTodos);
+      const currentTodos = todos;
       setError(null);
 
       const res = await fetch("/api/todos");
@@ -56,27 +56,32 @@ export function useTodos() {
 
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      const mergedTodos = mergeTodos(localTodos, serverTodos);
+      const nextTodos = serverTodos.length > 0
+        ? mergeTodos(currentTodos, serverTodos)
+        : currentTodos;
 
-      if (!areTodoListsEqual(localTodos, mergedTodos)) {
-        await saveStoredTodos(mergedTodos);
+      if (!areTodoListsEqual(currentTodos, nextTodos)) {
+        await saveStoredTodos(nextTodos);
       }
 
-      setTodosIfChanged(mergedTodos);
+      setTodosIfChanged(nextTodos);
       setLastSync(new Date());
     } catch (e) {
       console.error("Failed to load todos:", e);
       setError(e);
     } finally {
       setIsSyncing(false);
+      if (isInitial) {
+        setHasHydrated(true);
+      }
     }
-  }, [setTodosIfChanged]);
+  }, [setTodosIfChanged, todos]);
 
   useEffect(() => {
-    loadTodos();
+    void loadTodos(true);
 
     const intervalId = window.setInterval(() => {
-      void loadTodos();
+      void loadTodos(false);
     }, 3000);
 
     return () => window.clearInterval(intervalId);
@@ -256,6 +261,7 @@ export function useTodos() {
     error,
     lastSync,
     isSyncing,
+    hasHydrated,
     addTodo,
     updateTodo,
     deleteTodo,

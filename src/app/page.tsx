@@ -22,6 +22,7 @@ export default function Home() {
   const {
     todos,
     lastSync,
+    hasHydrated,
     addTodo,
     updateTodo,
     deleteTodo,
@@ -61,7 +62,7 @@ export default function Home() {
           <AddTodoForm onAdd={addTodo} />
         </div>
 
-        {todos.length === 0 ? (
+        {!hasHydrated && todos.length === 0 ? null : todos.length === 0 ? (
           <p className="text-[var(--ink-faint)] text-sm italic">
             {t("empty_state")}
           </p>
