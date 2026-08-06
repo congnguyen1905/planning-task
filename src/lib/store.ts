@@ -5,7 +5,7 @@ const REDIS_KEY = "daily-todos:list";
 const LOCAL_STORAGE_KEY = "daily-todos:list";
 
 /**
- * Get todos - from Redis if configured, otherwise from localStorage
+ * Get todos - from Redis if configured, otherwise from a server file or localStorage.
  */
 export async function getTodos(): Promise<Todo[]> {
   if (isRedisConfigured()) {
@@ -15,8 +15,13 @@ export async function getTodos(): Promise<Todo[]> {
       return data ?? [];
     }
   }
-  
-  // Fallback to localStorage when Redis is not configured
+
+  if (typeof window === "undefined") {
+    const { getTodosFromServerStore } = await import("./serverStore");
+    return getTodosFromServerStore();
+  }
+
+  // Fallback to localStorage when Redis is not configured and we are in the browser.
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -27,12 +32,12 @@ export async function getTodos(): Promise<Todo[]> {
       console.error("Error reading from localStorage:", e);
     }
   }
-  
+
   return [];
 }
 
 /**
- * Save todos - to Redis if configured, otherwise to localStorage
+ * Save todos - to Redis if configured, otherwise to a server file or localStorage.
  */
 export async function saveTodos(todos: Todo[]): Promise<void> {
   if (isRedisConfigured()) {
@@ -42,8 +47,14 @@ export async function saveTodos(todos: Todo[]): Promise<void> {
       return;
     }
   }
-  
-  // Fallback to localStorage when Redis is not configured
+
+  if (typeof window === "undefined") {
+    const { saveTodosToServerStore } = await import("./serverStore");
+    await saveTodosToServerStore(todos);
+    return;
+  }
+
+  // Fallback to localStorage when Redis is not configured and we are in the browser.
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos));

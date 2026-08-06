@@ -26,6 +26,9 @@ dist/
 build/
 *.egg-info/
 
+# Local todo data
+.todos-data.json
+
 # Coverage
 .coverage
 coverage/
