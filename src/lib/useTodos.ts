@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Todo } from "./types";
 import { getTodos as getStoredTodos, saveTodos as saveStoredTodos } from "./store";
 
@@ -34,19 +34,29 @@ export function useTodos() {
   const [isSyncing, setIsSyncing] = useState(true);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const todosRef = useRef<Todo[]>([]);
+  const isMutatingRef = useRef(false);
+
+  useEffect(() => {
+    todosRef.current = todos;
+  }, [todos]);
 
   const setTodosIfChanged = useCallback((nextTodos: Todo[]) => {
     setTodos((currentTodos) => (areTodoListsEqual(currentTodos, nextTodos) ? currentTodos : nextTodos));
   }, []);
 
-  const persistTodos = useCallback(async (nextTodos: Todo[]) => {
-    await saveStoredTodos(nextTodos);
-    setTodosIfChanged(nextTodos);
+  const syncTodosFromServer = useCallback(async (serverTodos: Todo[]) => {
+    const currentTodos = todosRef.current;
+    if (!areTodoListsEqual(currentTodos, serverTodos)) {
+      await saveStoredTodos(serverTodos);
+      setLastSync(new Date());
+    }
+    setTodosIfChanged(serverTodos);
   }, [setTodosIfChanged]);
 
   const loadTodos = useCallback(async (isInitial = false) => {
     try {
-      const currentTodos = todos;
+      const currentTodos = todosRef.current;
       setError(null);
 
       const res = await fetch("/api/todos");
@@ -60,12 +70,16 @@ export function useTodos() {
         ? mergeTodos(currentTodos, serverTodos)
         : currentTodos;
 
-      if (!areTodoListsEqual(currentTodos, nextTodos)) {
-        await saveStoredTodos(nextTodos);
+      if (isMutatingRef.current) {
+        setTodosIfChanged(currentTodos);
+        return;
       }
 
-      setTodosIfChanged(nextTodos);
-      setLastSync(new Date());
+      if (!areTodoListsEqual(currentTodos, nextTodos)) {
+        await saveStoredTodos(nextTodos);
+        setLastSync(new Date());
+        setTodosIfChanged(nextTodos);
+      }
     } catch (e) {
       console.error("Failed to load todos:", e);
       setError(e);
@@ -75,30 +89,20 @@ export function useTodos() {
         setHasHydrated(true);
       }
     }
-  }, [setTodosIfChanged, todos]);
+  }, [setTodosIfChanged]);
 
   useEffect(() => {
     void loadTodos(true);
 
     const intervalId = window.setInterval(() => {
       void loadTodos(false);
-    }, 3000);
+    }, 10000);
 
     return () => window.clearInterval(intervalId);
   }, [loadTodos]);
 
   async function addTodo(text: string) {
-    const newTodo: Todo = {
-      id: crypto.randomUUID(),
-      text,
-      done: false,
-      createdAt: Date.now(),
-      subtodos: [],
-    };
-
-    const optimisticTodos = [newTodo, ...todos].sort((a, b) => b.createdAt - a.createdAt);
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
       const res = await fetch("/api/todos", {
         method: "POST",
@@ -107,30 +111,34 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
+  async function runMutationWithRefresh(request: () => Promise<Response>) {
+    let res = await request();
+
+    if (res.status === 404) {
+      await loadTodos(true);
+      res = await request();
+    }
+
+    if (!res.ok) {
+      const errorPayload = await res.json().catch(() => ({}));
+      throw new Error((errorPayload as { error?: string }).error ?? "Request failed");
+    }
+
+    const json = await res.json();
+    return (json?.todos as Todo[]) ?? [];
+  }
+
   async function updateTodo(id: string, patch: { text?: string; done?: boolean }) {
-    const optimisticTodos = todos.map((todo) => {
-      if (todo.id !== id) return todo;
-      return {
-        ...todo,
-        ...patch,
-        subtodos: patch.done === undefined
-          ? todo.subtodos
-          : todo.subtodos.map((sub) => ({ ...sub, done: patch.done ?? sub.done })),
-      };
-    });
-
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
       const res = await fetch(`/api/todos/${id}`, {
         method: "PATCH",
@@ -139,60 +147,46 @@ export function useTodos() {
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo update to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
   async function deleteTodo(id: string) {
-    const optimisticTodos = todos.filter((todo) => todo.id !== id);
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
       const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync todo delete to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
   async function addSubTodo(todoId: string, text: string) {
-    const optimisticTodos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      return {
-        ...todo,
-        subtodos: [...todo.subtodos, { id: crypto.randomUUID(), text, done: false, createdAt: Date.now() }],
-      };
-    });
-
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
-      const res = await fetch(`/api/todos/${todoId}/subtodos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const json = await res.json();
-      const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      const serverTodos = await runMutationWithRefresh(() =>
+        fetch(`/api/todos/${todoId}/subtodos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        })
+      );
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
@@ -201,58 +195,38 @@ export function useTodos() {
     subId: string,
     patch: { text?: string; done?: boolean }
   ) {
-    const optimisticTodos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      return {
-        ...todo,
-        subtodos: todo.subtodos.map((sub) => (sub.id === subId ? { ...sub, ...patch } : sub)),
-      };
-    });
-
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
-      const res = await fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      const json = await res.json();
-      const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      const serverTodos = await runMutationWithRefresh(() =>
+        fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        })
+      );
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask update to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
   async function deleteSubTodo(todoId: string, subId: string) {
-    const optimisticTodos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      return {
-        ...todo,
-        subtodos: todo.subtodos.filter((sub) => sub.id !== subId),
-      };
-    });
-
-    await persistTodos(optimisticTodos);
-
+    isMutatingRef.current = true;
     try {
-      const res = await fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
-      const serverTodos = (json?.todos as Todo[]) ?? [];
-      if (!areTodoListsEqual(optimisticTodos, serverTodos)) {
-        await saveStoredTodos(serverTodos);
-      }
-      setTodosIfChanged(serverTodos);
+      const serverTodos = await runMutationWithRefresh(() =>
+        fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
+          method: "DELETE",
+        })
+      );
+      await syncTodosFromServer(serverTodos);
     } catch (e) {
       console.error("Failed to sync subtask delete to server:", e);
       setError(e);
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
