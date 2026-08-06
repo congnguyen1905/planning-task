@@ -13,7 +13,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const text = (body?.text ?? "").trim();
-  const date = (body?.date ?? "").trim();
+  const startDate = (body?.startDate ?? "").trim();
+  const endDate = (body?.endDate ?? "").trim();
 
   if (!text) {
     return NextResponse.json({ error: "Text is required" }, { status: 400 });
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     text,
     done: false,
     createdAt: Date.now(),
-    date: date || new Date().toISOString().slice(0, 10),
+    startDate: startDate || new Date().toISOString().slice(0, 10),
+    endDate: endDate || startDate || new Date().toISOString().slice(0, 10),
     subtodos: [],
   };
   todos.push(newTodo);

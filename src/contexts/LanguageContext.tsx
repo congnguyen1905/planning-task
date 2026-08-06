@@ -45,13 +45,17 @@ const translations: Translations = {
     vi: "tự động đồng bộ mỗi 10 giây · mở ở máy khác cũng thấy ngay",
     en: "auto-sync every 10 seconds · open on another device to see updates",
   },
-  "due_date": {
-    vi: "Ngày",
-    en: "Date",
+  "start_date": {
+    vi: "Từ",
+    en: "From",
+  },
+  "end_date": {
+    vi: "Đến",
+    en: "To",
   },
   "filter_date": {
-    vi: "Lọc theo ngày",
-    en: "Filter by date",
+    vi: "Lọc theo khoảng ngày",
+    en: "Filter by date range",
   },
   "previous_day": {
     vi: "Ngày trước",

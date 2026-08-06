@@ -101,13 +101,13 @@ export function useTodos() {
     return () => window.clearInterval(intervalId);
   }, [loadTodos]);
 
-  async function addTodo(text: string, date: string) {
+  async function addTodo(text: string, startDate: string, endDate: string) {
     isMutatingRef.current = true;
     try {
       const res = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, date }),
+        body: JSON.stringify({ text, startDate, endDate }),
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
@@ -137,7 +137,7 @@ export function useTodos() {
     return (json?.todos as Todo[]) ?? [];
   }
 
-  async function updateTodo(id: string, patch: { text?: string; done?: boolean; date?: string }) {
+  async function updateTodo(id: string, patch: { text?: string; done?: boolean; startDate?: string; endDate?: string }) {
     isMutatingRef.current = true;
     try {
       const res = await fetch(`/api/todos/${id}`, {
@@ -171,14 +171,14 @@ export function useTodos() {
     }
   }
 
-  async function addSubTodo(todoId: string, text: string, date: string) {
+  async function addSubTodo(todoId: string, text: string, startDate: string, endDate: string) {
     isMutatingRef.current = true;
     try {
       const serverTodos = await runMutationWithRefresh(() =>
         fetch(`/api/todos/${todoId}/subtodos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, date }),
+          body: JSON.stringify({ text, startDate, endDate }),
         })
       );
       await syncTodosFromServer(serverTodos);
@@ -193,7 +193,7 @@ export function useTodos() {
   async function updateSubTodo(
     todoId: string,
     subId: string,
-    patch: { text?: string; done?: boolean; date?: string }
+    patch: { text?: string; done?: boolean; startDate?: string; endDate?: string }
   ) {
     isMutatingRef.current = true;
     try {

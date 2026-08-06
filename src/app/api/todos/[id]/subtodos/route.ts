@@ -10,7 +10,8 @@ export async function POST(
   const { id } = await params;
   const body = await req.json();
   const text = (body?.text ?? "").trim();
-  const date = (body?.date ?? "").trim();
+  const startDate = (body?.startDate ?? "").trim();
+  const endDate = (body?.endDate ?? "").trim();
 
   if (!text) {
     return NextResponse.json({ error: "Text is required" }, { status: 400 });
@@ -28,7 +29,8 @@ export async function POST(
     text,
     done: false,
     createdAt: Date.now(),
-    date: date || todo.date,
+    startDate: startDate || todo.startDate,
+    endDate: endDate || todo.endDate,
   };
   todo.subtodos.push(newSub);
   // Adding a new (undone) subtask reopens the parent if it was done.

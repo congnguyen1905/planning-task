@@ -7,12 +7,12 @@ export function SubTodoRow({
   sub,
   onToggle,
   onDelete,
-  onChangeDate,
+  onChangeDateRange,
 }: {
   sub: SubTodo;
   onToggle: (done: boolean) => void;
   onDelete: () => void;
-  onChangeDate: (date: string) => void;
+  onChangeDateRange: (startDate: string, endDate: string) => void;
 }) {
   const { t } = useLanguage();
 
@@ -33,12 +33,21 @@ export function SubTodoRow({
       >
         {sub.text}
       </span>
-      <input
-        type="date"
-        value={sub.date}
-        onChange={(e) => onChangeDate(e.target.value)}
-        className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
-      />
+      <div className="flex items-center gap-1">
+        <input
+          type="date"
+          value={sub.startDate}
+          onChange={(e) => onChangeDateRange(e.target.value, sub.endDate)}
+          className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+        />
+        <span className="text-[10px] text-[var(--ink-faint)]">→</span>
+        <input
+          type="date"
+          value={sub.endDate}
+          onChange={(e) => onChangeDateRange(sub.startDate, e.target.value)}
+          className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+        />
+      </div>
       <button
         onClick={onDelete}
         aria-label={t("delete_subtask")}

@@ -38,3 +38,7 @@ export function formatDateLabel(value: string, language: "vi" | "en" = "vi") {
     year: "numeric",
   });
 }
+
+export function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+  return startA <= endB && endA >= startB;
+}

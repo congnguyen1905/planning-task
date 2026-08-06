@@ -9,34 +9,36 @@ export function TodoRow({
   todo,
   selectedDate,
   onToggle,
-  onChangeDate,
+  onChangeDateRange,
   onDelete,
   onAddSub,
   onToggleSub,
   onDeleteSub,
-  onChangeSubDate,
+  onChangeSubDateRange,
 }: {
   todo: Todo;
   selectedDate: string;
   onToggle: (done: boolean) => void;
-  onChangeDate: (date: string) => void;
+  onChangeDateRange: (startDate: string, endDate: string) => void;
   onDelete: () => void;
-  onAddSub: (text: string, date: string) => void;
+  onAddSub: (text: string, startDate: string, endDate: string) => void;
   onToggleSub: (subId: string, done: boolean) => void;
   onDeleteSub: (subId: string) => void;
-  onChangeSubDate: (subId: string, date: string) => void;
+  onChangeSubDateRange: (subId: string, startDate: string, endDate: string) => void;
 }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(true);
   const [subText, setSubText] = useState("");
-  const [subDate, setSubDate] = useState(todo.date);
+  const [subStartDate, setSubStartDate] = useState(todo.startDate);
+  const [subEndDate, setSubEndDate] = useState(todo.endDate);
 
   useEffect(() => {
-    setSubDate(todo.date);
-  }, [todo.date]);
+    setSubStartDate(todo.startDate);
+    setSubEndDate(todo.endDate);
+  }, [todo.startDate, todo.endDate]);
 
   const visibleSubtasks = todo.subtodos.filter(
-    (sub) => sub.date === selectedDate || todo.date === selectedDate
+    (sub) => sub.startDate <= selectedDate && sub.endDate >= selectedDate
   );
   const total = visibleSubtasks.length;
   const doneCount = visibleSubtasks.filter((s) => s.done).length;
@@ -45,7 +47,7 @@ export function TodoRow({
     e.preventDefault();
     const value = subText.trim();
     if (!value) return;
-    onAddSub(value, subDate);
+    onAddSub(value, subStartDate, subEndDate);
     setSubText("");
   }
 
@@ -68,12 +70,21 @@ export function TodoRow({
           {todo.text}
         </span>
 
-        <input
-          type="date"
-          value={todo.date}
-          onChange={(e) => onChangeDate(e.target.value)}
-          className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
-        />
+        <div className="flex items-center gap-1">
+          <input
+            type="date"
+            value={todo.startDate}
+            onChange={(e) => onChangeDateRange(e.target.value, todo.endDate)}
+            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+          />
+          <span className="text-[10px] text-[var(--ink-faint)]">→</span>
+          <input
+            type="date"
+            value={todo.endDate}
+            onChange={(e) => onChangeDateRange(todo.startDate, e.target.value)}
+            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+          />
+        </div>
 
         {total > 0 && (
           <button
@@ -102,7 +113,7 @@ export function TodoRow({
               sub={sub}
               onToggle={(done) => onToggleSub(sub.id, done)}
               onDelete={() => onDeleteSub(sub.id)}
-              onChangeDate={(date) => onChangeSubDate(sub.id, date)}
+              onChangeDateRange={(startDate, endDate) => onChangeSubDateRange(sub.id, startDate, endDate)}
             />
           ))}
 
@@ -114,12 +125,25 @@ export function TodoRow({
               placeholder={t("add_subtask_placeholder")}
               className="flex-1 bg-transparent text-sm py-1 text-[var(--ink-muted)] placeholder:text-[var(--ink-faint)] focus:outline-none border-b border-transparent focus:border-[var(--hairline)] transition-colors"
             />
-            <input
-              type="date"
-              value={subDate}
-              onChange={(e) => setSubDate(e.target.value)}
-              className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
-            />
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                value={subStartDate}
+                onChange={(e) => {
+                  setSubStartDate(e.target.value);
+                }}
+                className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+              />
+              <span className="text-[10px] text-[var(--ink-faint)]">→</span>
+              <input
+                type="date"
+                value={subEndDate}
+                onChange={(e) => {
+                  setSubEndDate(e.target.value);
+                }}
+                className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+              />
+            </div>
           </form>
         </div>
       )}

@@ -18,8 +18,11 @@ export async function PATCH(
   if (typeof body.text === "string" && body.text.trim()) {
     todo.text = body.text.trim();
   }
-  if (typeof body.date === "string" && body.date.trim()) {
-    todo.date = body.date.trim();
+  if (typeof body.startDate === "string" && body.startDate.trim()) {
+    todo.startDate = body.startDate.trim();
+  }
+  if (typeof body.endDate === "string" && body.endDate.trim()) {
+    todo.endDate = body.endDate.trim();
   }
   if (typeof body.done === "boolean") {
     todo.done = body.done;

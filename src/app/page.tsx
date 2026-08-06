@@ -24,8 +24,10 @@ export default function Home() {
   } = useTodos();
 
   const visibleTodos = todos.filter((todo) => {
-    const parentMatches = todo.date === selectedDate;
-    const subtaskMatches = todo.subtodos.some((sub) => sub.date === selectedDate);
+    const parentMatches = todo.startDate <= selectedDate && todo.endDate >= selectedDate;
+    const subtaskMatches = todo.subtodos.some(
+      (sub) => sub.startDate <= selectedDate && sub.endDate >= selectedDate
+    );
     return parentMatches || subtaskMatches;
   });
   const active = visibleTodos.filter((t) => !t.done);
@@ -79,7 +81,7 @@ export default function Home() {
         </div>
 
         <div className="mb-8">
-          <AddTodoForm onAdd={addTodo} defaultDate={selectedDate} />
+          <AddTodoForm onAdd={addTodo} defaultStartDate={selectedDate} defaultEndDate={selectedDate} />
         </div>
 
         {!hasHydrated && visibleTodos.length === 0 ? null : visibleTodos.length === 0 ? (
@@ -96,14 +98,14 @@ export default function Home() {
                     todo={todo}
                     selectedDate={selectedDate}
                     onToggle={(v) => updateTodo(todo.id, { done: v })}
-                    onChangeDate={(date) => updateTodo(todo.id, { date })}
+                    onChangeDateRange={(startDate, endDate) => updateTodo(todo.id, { startDate, endDate })}
                     onDelete={() => deleteTodo(todo.id)}
-                    onAddSub={(text, date) => addSubTodo(todo.id, text, date)}
+                    onAddSub={(text, startDate, endDate) => addSubTodo(todo.id, text, startDate, endDate)}
                     onToggleSub={(subId, v) =>
                       updateSubTodo(todo.id, subId, { done: v })
                     }
                     onDeleteSub={(subId) => deleteSubTodo(todo.id, subId)}
-                    onChangeSubDate={(subId, date) => updateSubTodo(todo.id, subId, { date })}
+                    onChangeSubDateRange={(subId, startDate, endDate) => updateSubTodo(todo.id, subId, { startDate, endDate })}
                   />
                 ))}
               </section>
@@ -120,14 +122,14 @@ export default function Home() {
                     todo={todo}
                     selectedDate={selectedDate}
                     onToggle={(v) => updateTodo(todo.id, { done: v })}
-                    onChangeDate={(date) => updateTodo(todo.id, { date })}
+                    onChangeDateRange={(startDate, endDate) => updateTodo(todo.id, { startDate, endDate })}
                     onDelete={() => deleteTodo(todo.id)}
-                    onAddSub={(text, date) => addSubTodo(todo.id, text, date)}
+                    onAddSub={(text, startDate, endDate) => addSubTodo(todo.id, text, startDate, endDate)}
                     onToggleSub={(subId, v) =>
                       updateSubTodo(todo.id, subId, { done: v })
                     }
                     onDeleteSub={(subId) => deleteSubTodo(todo.id, subId)}
-                    onChangeSubDate={(subId, date) => updateSubTodo(todo.id, subId, { date })}
+                    onChangeSubDateRange={(subId, startDate, endDate) => updateSubTodo(todo.id, subId, { startDate, endDate })}
                   />
                 ))}
               </section>
