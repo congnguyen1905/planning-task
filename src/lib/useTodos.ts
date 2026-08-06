@@ -68,7 +68,7 @@ export function useTodos() {
       const serverTodos = (json?.todos as Todo[]) ?? [];
       const nextTodos = serverTodos.length > 0
         ? mergeTodos(currentTodos, serverTodos)
-        : currentTodos;
+        : serverTodos;
 
       if (isMutatingRef.current) {
         setTodosIfChanged(currentTodos);
