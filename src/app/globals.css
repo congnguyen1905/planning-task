@@ -12,6 +12,16 @@
   --sage: #7a9a7e;
   --sage-dim: #4d5f4f;
   --danger: #c1654f;
+
+  /* Trạng thái công việc trên lịch/gantt */
+  --status-not-started: #6fae74;   /* xanh lá — chưa thực hiện */
+  --status-not-started-dim: #2f4a34;
+  --status-in-progress: #5b96c9;   /* xanh dương — đang xử lý */
+  --status-in-progress-dim: #2c4258;
+  --status-overdue: #d1594a;       /* đỏ — quá hạn chưa xong */
+  --status-overdue-dim: #4e2a26;
+  --status-done: #8a8272;          /* xám — đã xong */
+  --status-done-dim: #3a3730;
 }
 
 @theme inline {

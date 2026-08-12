@@ -65,6 +65,54 @@ const translations: Translations = {
     vi: "Ngày sau",
     en: "Next day",
   },
+  "view_list": {
+    vi: "Danh sách",
+    en: "List",
+  },
+  "view_calendar": {
+    vi: "Lịch tiến độ",
+    en: "Calendar",
+  },
+  "range_from": {
+    vi: "Từ ngày",
+    en: "From",
+  },
+  "range_to": {
+    vi: "Đến ngày",
+    en: "To",
+  },
+  "this_week": {
+    vi: "Tuần này",
+    en: "This week",
+  },
+  "this_month": {
+    vi: "Tháng này",
+    en: "This month",
+  },
+  "no_tasks_in_range": {
+    vi: "Không có việc nào trong khoảng ngày này.",
+    en: "No tasks in this date range.",
+  },
+  "status_not_started": {
+    vi: "Chưa thực hiện",
+    en: "Not started",
+  },
+  "status_in_progress": {
+    vi: "Đang xử lý",
+    en: "In progress",
+  },
+  "status_overdue": {
+    vi: "Quá hạn",
+    en: "Overdue",
+  },
+  "status_done": {
+    vi: "Đã xong",
+    en: "Done",
+  },
+  "today_column": {
+    vi: "Hôm nay",
+    en: "Today",
+  },
   // AddTodoForm
   "add_task_placeholder": {
     vi: "Thêm việc cần làm hôm nay…",

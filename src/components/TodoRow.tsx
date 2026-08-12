@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import type { Todo } from "@/lib/types";
 import { SubTodoRow } from "./SubTodoRow";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { reconcileDateRange } from "@/lib/date";
+import { isWithinFilterRange, reconcileDateRange } from "@/lib/date";
 
 export function TodoRow({
   todo,
-  selectedDate,
+  rangeStart,
+  rangeEnd,
   onToggle,
   onChangeDateRange,
   onDelete,
@@ -18,7 +19,8 @@ export function TodoRow({
   onChangeSubDateRange,
 }: {
   todo: Todo;
-  selectedDate: string;
+  rangeStart: string;
+  rangeEnd: string;
   onToggle: (done: boolean) => void;
   onChangeDateRange: (startDate: string, endDate: string) => void;
   onDelete: () => void;
@@ -38,8 +40,8 @@ export function TodoRow({
     setSubEndDate(todo.endDate);
   }, [todo.startDate, todo.endDate]);
 
-  const visibleSubtasks = todo.subtodos.filter(
-    (sub) => sub.startDate <= selectedDate && sub.endDate >= selectedDate
+  const visibleSubtasks = todo.subtodos.filter((sub) =>
+    isWithinFilterRange(sub.startDate, sub.endDate, rangeStart, rangeEnd)
   );
   const total = visibleSubtasks.length;
   const doneCount = visibleSubtasks.filter((s) => s.done).length;
