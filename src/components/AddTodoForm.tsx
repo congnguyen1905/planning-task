@@ -38,16 +38,18 @@ export function AddTodoForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <span className="font-mono text-[var(--ink-faint)] text-sm">＋</span>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={t("add_task_placeholder")}
-        className="flex-1 bg-transparent border-b border-[var(--hairline)] py-2 text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--amber)] transition-colors"
-      />
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-2 text-sm text-[var(--ink-faint)]">
+    <form onSubmit={submit} className="rounded-sm border border-[var(--hairline)] p-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[var(--ink-faint)] text-sm">＋</span>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={t("add_task_placeholder")}
+          className="flex-1 bg-transparent border-b border-[var(--hairline)] py-2 text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--amber)] transition-colors"
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
           <span className="font-mono text-[11px] uppercase tracking-wider">{t("start_date")}</span>
           <input
             type="date"
@@ -60,7 +62,7 @@ export function AddTodoForm({
             className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
           />
         </label>
-        <label className="flex items-center gap-2 text-sm text-[var(--ink-faint)]">
+        <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
           <span className="font-mono text-[11px] uppercase tracking-wider">{t("end_date")}</span>
           <input
             type="date"
@@ -76,7 +78,7 @@ export function AddTodoForm({
         <button
           type="submit"
           disabled={!text.trim() || busy}
-          className="font-mono text-xs uppercase tracking-wider px-3 py-1.5 rounded-sm border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] disabled:hover:text-[var(--ink-muted)] transition-colors"
+          className="w-full font-mono text-xs uppercase tracking-wider px-3 py-1.5 rounded-sm border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] disabled:hover:text-[var(--ink-muted)] transition-colors"
         >
           {t("add_button")}
         </button>
