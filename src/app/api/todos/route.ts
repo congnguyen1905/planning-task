@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getTodos, saveTodos } from "@/lib/store";
+import { reconcileDateRange } from "@/lib/date";
 import type { Todo } from "@/lib/types";
 
 export async function GET() {
@@ -21,13 +22,21 @@ export async function POST(req: NextRequest) {
   }
 
   const todos = await getTodos();
+  const resolvedStart = startDate || new Date().toISOString().slice(0, 10);
+  const resolvedEnd = endDate || startDate || new Date().toISOString().slice(0, 10);
+  const { startDate: safeStart, endDate: safeEnd } = reconcileDateRange(
+    resolvedStart,
+    resolvedEnd,
+    "start"
+  );
+
   const newTodo: Todo = {
     id: randomUUID(),
     text,
     done: false,
     createdAt: Date.now(),
-    startDate: startDate || new Date().toISOString().slice(0, 10),
-    endDate: endDate || startDate || new Date().toISOString().slice(0, 10),
+    startDate: safeStart,
+    endDate: safeEnd,
     subtodos: [],
   };
   todos.push(newTodo);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTodos, saveTodos } from "@/lib/store";
+import { reconcileDateRange } from "@/lib/date";
 
 export async function PATCH(
   req: NextRequest,
@@ -19,12 +20,19 @@ export async function PATCH(
   if (typeof body.text === "string" && body.text.trim()) {
     sub.text = body.text.trim();
   }
-  if (typeof body.startDate === "string" && body.startDate.trim()) {
-    sub.startDate = body.startDate.trim();
+
+  const startChanged = typeof body.startDate === "string" && body.startDate.trim().length > 0;
+  const endChanged = typeof body.endDate === "string" && body.endDate.trim().length > 0;
+  if (startChanged || endChanged) {
+    const nextStart = startChanged ? body.startDate.trim() : sub.startDate;
+    const nextEnd = endChanged ? body.endDate.trim() : sub.endDate;
+    // If both changed at once, treat endDate as the field that "wins" the conflict.
+    const changedField = endChanged ? "end" : "start";
+    const reconciled = reconcileDateRange(nextStart, nextEnd, changedField);
+    sub.startDate = reconciled.startDate;
+    sub.endDate = reconciled.endDate;
   }
-  if (typeof body.endDate === "string" && body.endDate.trim()) {
-    sub.endDate = body.endDate.trim();
-  }
+
   if (typeof body.done === "boolean") {
     sub.done = body.done;
     // If every subtask is done, mark the parent done too.

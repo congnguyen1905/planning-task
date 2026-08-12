@@ -2,6 +2,7 @@
 
 import type { SubTodo } from "@/lib/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { reconcileDateRange } from "@/lib/date";
 
 export function SubTodoRow({
   sub,
@@ -37,14 +38,20 @@ export function SubTodoRow({
         <input
           type="date"
           value={sub.startDate}
-          onChange={(e) => onChangeDateRange(e.target.value, sub.endDate)}
+          onChange={(e) => {
+            const next = reconcileDateRange(e.target.value, sub.endDate, "start");
+            onChangeDateRange(next.startDate, next.endDate);
+          }}
           className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
         />
         <span className="text-[10px] text-[var(--ink-faint)]">→</span>
         <input
           type="date"
           value={sub.endDate}
-          onChange={(e) => onChangeDateRange(sub.startDate, e.target.value)}
+          onChange={(e) => {
+            const next = reconcileDateRange(sub.startDate, e.target.value, "end");
+            onChangeDateRange(next.startDate, next.endDate);
+          }}
           className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
         />
       </div>

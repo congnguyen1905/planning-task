@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getTodos, saveTodos } from "@/lib/store";
+import { reconcileDateRange } from "@/lib/date";
 import type { SubTodo } from "@/lib/types";
 
 export async function POST(
@@ -24,13 +25,21 @@ export async function POST(
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });
   }
 
+  const resolvedStart = startDate || todo.startDate;
+  const resolvedEnd = endDate || todo.endDate;
+  const { startDate: safeStart, endDate: safeEnd } = reconcileDateRange(
+    resolvedStart,
+    resolvedEnd,
+    "start"
+  );
+
   const newSub: SubTodo = {
     id: randomUUID(),
     text,
     done: false,
     createdAt: Date.now(),
-    startDate: startDate || todo.startDate,
-    endDate: endDate || todo.endDate,
+    startDate: safeStart,
+    endDate: safeEnd,
   };
   todo.subtodos.push(newSub);
   // Adding a new (undone) subtask reopens the parent if it was done.

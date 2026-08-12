@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTodos, saveTodos } from "@/lib/store";
+import { reconcileDateRange } from "@/lib/date";
 
 export async function PATCH(
   req: NextRequest,
@@ -18,12 +19,19 @@ export async function PATCH(
   if (typeof body.text === "string" && body.text.trim()) {
     todo.text = body.text.trim();
   }
-  if (typeof body.startDate === "string" && body.startDate.trim()) {
-    todo.startDate = body.startDate.trim();
+
+  const startChanged = typeof body.startDate === "string" && body.startDate.trim().length > 0;
+  const endChanged = typeof body.endDate === "string" && body.endDate.trim().length > 0;
+  if (startChanged || endChanged) {
+    const nextStart = startChanged ? body.startDate.trim() : todo.startDate;
+    const nextEnd = endChanged ? body.endDate.trim() : todo.endDate;
+    // If both changed at once, treat endDate as the field that "wins" the conflict.
+    const changedField = endChanged ? "end" : "start";
+    const reconciled = reconcileDateRange(nextStart, nextEnd, changedField);
+    todo.startDate = reconciled.startDate;
+    todo.endDate = reconciled.endDate;
   }
-  if (typeof body.endDate === "string" && body.endDate.trim()) {
-    todo.endDate = body.endDate.trim();
-  }
+
   if (typeof body.done === "boolean") {
     todo.done = body.done;
     // Toggling the parent done state cascades to its subtodos.

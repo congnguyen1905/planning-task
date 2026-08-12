@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Todo } from "@/lib/types";
 import { SubTodoRow } from "./SubTodoRow";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { reconcileDateRange } from "@/lib/date";
 
 export function TodoRow({
   todo,
@@ -74,14 +75,20 @@ export function TodoRow({
           <input
             type="date"
             value={todo.startDate}
-            onChange={(e) => onChangeDateRange(e.target.value, todo.endDate)}
+            onChange={(e) => {
+              const next = reconcileDateRange(e.target.value, todo.endDate, "start");
+              onChangeDateRange(next.startDate, next.endDate);
+            }}
             className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
           />
           <span className="text-[10px] text-[var(--ink-faint)]">→</span>
           <input
             type="date"
             value={todo.endDate}
-            onChange={(e) => onChangeDateRange(todo.startDate, e.target.value)}
+            onChange={(e) => {
+              const next = reconcileDateRange(todo.startDate, e.target.value, "end");
+              onChangeDateRange(next.startDate, next.endDate);
+            }}
             className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
           />
         </div>
@@ -130,7 +137,9 @@ export function TodoRow({
                 type="date"
                 value={subStartDate}
                 onChange={(e) => {
-                  setSubStartDate(e.target.value);
+                  const next = reconcileDateRange(e.target.value, subEndDate, "start");
+                  setSubStartDate(next.startDate);
+                  setSubEndDate(next.endDate);
                 }}
                 className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
               />
@@ -139,7 +148,9 @@ export function TodoRow({
                 type="date"
                 value={subEndDate}
                 onChange={(e) => {
-                  setSubEndDate(e.target.value);
+                  const next = reconcileDateRange(subStartDate, e.target.value, "end");
+                  setSubStartDate(next.startDate);
+                  setSubEndDate(next.endDate);
                 }}
                 className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
               />

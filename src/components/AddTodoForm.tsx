@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatDateKey } from "@/lib/date";
+import { formatDateKey, reconcileDateRange } from "@/lib/date";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export function AddTodoForm({
@@ -52,7 +52,11 @@ export function AddTodoForm({
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              const next = reconcileDateRange(e.target.value, endDate, "start");
+              setStartDate(next.startDate);
+              setEndDate(next.endDate);
+            }}
             className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
           />
         </label>
@@ -61,7 +65,11 @@ export function AddTodoForm({
           <input
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => {
+              const next = reconcileDateRange(startDate, e.target.value, "end");
+              setStartDate(next.startDate);
+              setEndDate(next.endDate);
+            }}
             className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
           />
         </label>

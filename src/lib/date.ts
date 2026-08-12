@@ -42,3 +42,16 @@ export function formatDateLabel(value: string, language: "vi" | "en" = "vi") {
 export function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
   return startA <= endB && endA >= startB;
 }
+
+export function reconcileDateRange(
+  startDate: string,
+  endDate: string,
+  changedField: "start" | "end"
+): { startDate: string; endDate: string } {
+  if (endDate < startDate) {
+    return changedField === "start"
+      ? { startDate, endDate: startDate }   // sửa start làm end < start → end = start
+      : { startDate: endDate, endDate };    // sửa end làm end < start → start = end
+  }
+  return { startDate, endDate };
+}
