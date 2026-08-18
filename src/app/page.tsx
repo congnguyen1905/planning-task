@@ -197,7 +197,15 @@ export default function Home() {
                 {t("empty_state")}
               </p>
             ) : view === "calendar" ? (
-              <CalendarView todos={visibleTodos} rangeStart={rangeStart} rangeEnd={rangeEnd} />
+              <CalendarView
+                todos={visibleTodos}
+                rangeStart={rangeStart}
+                rangeEnd={rangeEnd}
+                onUpdateTodo={(id, startDate, endDate) => updateTodo(id, { startDate, endDate })}
+                onUpdateSubTodo={(parentId, subId, startDate, endDate) =>
+                  updateSubTodo(parentId, subId, { startDate, endDate })
+                }
+              />
             ) : (
               <div className="space-y-8">
                 {active.length > 0 && (

@@ -113,6 +113,10 @@ const translations: Translations = {
     vi: "Hôm nay",
     en: "Today",
   },
+  "drag_hint": {
+    vi: "Kéo 2 cạnh bên để tăng/giảm thời gian, kéo ở giữa để di chuyển công việc",
+    en: "Drag 2 sides to adjust duration, drag center to move task",
+  },
   // AddTodoForm
   "add_task_placeholder": {
     vi: "Thêm việc cần làm hôm nay…",
