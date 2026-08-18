@@ -20,6 +20,10 @@ export async function PATCH(
     todo.text = body.text.trim();
   }
 
+  if (typeof body.projectId === "string") {
+    todo.projectId = body.projectId.trim() || undefined;
+  }
+
   const startChanged = typeof body.startDate === "string" && body.startDate.trim().length > 0;
   const endChanged = typeof body.endDate === "string" && body.endDate.trim().length > 0;
   if (startChanged || endChanged) {

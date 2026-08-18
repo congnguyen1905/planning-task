@@ -103,13 +103,13 @@ export function useTodos(useDataApi = false) {
     return () => window.clearInterval(intervalId);
   }, [loadTodos]);
 
-  async function addTodo(text: string, startDate: string, endDate: string) {
+  async function addTodo(text: string, startDate: string, endDate: string, projectId?: string) {
     isMutatingRef.current = true;
     try {
       const res = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, startDate, endDate }),
+        body: JSON.stringify({ text, startDate, endDate, projectId }),
       });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
@@ -139,7 +139,7 @@ export function useTodos(useDataApi = false) {
     return (json?.todos as Todo[]) ?? [];
   }
 
-  async function updateTodo(id: string, patch: { text?: string; done?: boolean; startDate?: string; endDate?: string }) {
+  async function updateTodo(id: string, patch: { text?: string; done?: boolean; startDate?: string; endDate?: string; projectId?: string }) {
     isMutatingRef.current = true;
     try {
       const res = await fetch(`/api/todos/${id}`, {

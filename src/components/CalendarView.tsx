@@ -15,11 +15,13 @@ import {
 type Row = {
   key: string;
   parentId?: string;
+  projectId?: string;
   label: string;
   isSub: boolean;
   startDate: string;
   endDate: string;
   done: boolean;
+  todo: Todo;
 };
 
 type DragState = {
@@ -63,14 +65,18 @@ export function CalendarView({
   todos,
   rangeStart,
   rangeEnd,
+  projectsMap,
   onUpdateTodo,
   onUpdateSubTodo,
+  onSelectTodo,
 }: {
   todos: Todo[];
   rangeStart: string;
   rangeEnd: string;
+  projectsMap?: Record<string, { name: string; color?: string }>;
   onUpdateTodo?: (id: string, startDate: string, endDate: string) => void;
   onUpdateSubTodo?: (parentId: string, subId: string, startDate: string, endDate: string) => void;
+  onSelectTodo?: (todo: Todo) => void;
 }) {
   const { t, language } = useLanguage();
   const today = formatDateKey(new Date());
@@ -82,21 +88,25 @@ export function CalendarView({
     for (const todo of todos) {
       result.push({
         key: todo.id,
+        projectId: todo.projectId,
         label: todo.text,
         isSub: false,
         startDate: todo.startDate,
         endDate: todo.endDate,
         done: todo.done,
+        todo,
       });
       for (const sub of todo.subtodos) {
         result.push({
           key: sub.id,
           parentId: todo.id,
+          projectId: todo.projectId,
           label: sub.text,
           isSub: true,
           startDate: sub.startDate,
           endDate: sub.endDate,
           done: sub.done,
+          todo,
         });
       }
     }
@@ -265,7 +275,46 @@ export function CalendarView({
                       row.isSub ? "pl-7 text-[var(--ink-muted)]" : "text-[var(--ink)] font-medium"
                     } ${row.done ? "line-through opacity-60" : ""}`}
                   >
-                    {row.label}
+                    <div className="flex items-center justify-between gap-2 max-w-[220px]">
+                      <div
+                        className={`flex items-center gap-1.5 truncate ${
+                          !row.isSub && onSelectTodo ? "cursor-pointer hover:text-[var(--amber)]" : ""
+                        }`}
+                        onClick={() => {
+                          if (!row.isSub && onSelectTodo) {
+                            onSelectTodo(row.todo);
+                          }
+                        }}
+                      >
+                        {row.projectId && projectsMap?.[row.projectId] ? (
+                          <span
+                            className="h-2 w-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: projectsMap[row.projectId].color || "#f59e0b" }}
+                            title={projectsMap[row.projectId].name}
+                          />
+                        ) : !row.isSub ? (
+                          <span
+                            className="h-2 w-2 rounded-full border border-dashed border-amber-500/80 flex-shrink-0"
+                            title="Chưa gán dự án"
+                          />
+                        ) : null}
+                        <span className="truncate">{row.label}</span>
+                      </div>
+
+                      {!row.projectId && !row.isSub && onSelectTodo && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectTodo(row.todo);
+                          }}
+                          className="text-[10px] font-mono text-[var(--amber)] border border-[var(--amber)]/40 hover:bg-[var(--amber)] hover:text-[#1c1b19] rounded px-1.5 py-0.5 transition-colors flex-shrink-0"
+                          title={t("assign_project")}
+                        >
+                          + Dự án
+                        </button>
+                      )}
+                    </div>
                   </td>
                   {days.map((day) => {
                     const inRange = day >= effectiveStart && day <= effectiveEnd;
@@ -287,6 +336,13 @@ export function CalendarView({
                             }`}
                             style={{ backgroundColor: style.bg }}
                             title={`${row.label} (${formatDateLabel(effectiveStart, language)} — ${formatDateLabel(effectiveEnd, language)})`}
+                            onClick={(e) => {
+                              // If task has no project, click on calendar bar also opens assign project modal!
+                              if (!row.projectId && !row.isSub && onSelectTodo) {
+                                e.stopPropagation();
+                                onSelectTodo(row.todo);
+                              }
+                            }}
                             onPointerDown={(e) => {
                               const target = e.target as HTMLElement;
                               if (target.dataset.handle) return;

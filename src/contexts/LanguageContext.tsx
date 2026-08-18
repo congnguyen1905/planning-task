@@ -153,6 +153,71 @@ const translations: Translations = {
     vi: "Chuyển ngôn ngữ",
     en: "Switch language",
   },
+  // Projects
+  "projects_title": {
+    vi: "Dự án",
+    en: "Projects",
+  },
+  "all_projects": {
+    vi: "Tất cả dự án",
+    en: "All Projects",
+  },
+  "create_project": {
+    vi: "Tạo Dự án Mới",
+    en: "Create New Project",
+  },
+  "new_project_btn": {
+    vi: "+ Dự án",
+    en: "+ Project",
+  },
+  "project_name": {
+    vi: "Tên dự án",
+    en: "Project Name",
+  },
+  "project_name_placeholder": {
+    vi: "Nhập tên dự án…",
+    en: "Enter project name…",
+  },
+  "project_description": {
+    vi: "Mô tả (không bắt buộc)",
+    en: "Description (optional)",
+  },
+  "project_description_placeholder": {
+    vi: "Nhập mô tả dự án…",
+    en: "Enter project description…",
+  },
+  "project_color": {
+    vi: "Màu đánh dấu",
+    en: "Color tag",
+  },
+  "cancel": {
+    vi: "Hủy",
+    en: "Cancel",
+  },
+  "create": {
+    vi: "Tạo dự án",
+    en: "Create project",
+  },
+  "delete_project": {
+    vi: "Xóa dự án",
+    en: "Delete project",
+  },
+  "select_project": {
+    vi: "Chọn dự án",
+    en: "Select project",
+  },
+  "unassigned_project": {
+    vi: "Chưa phân dự án",
+    en: "Unassigned project",
+  },
+  "assign_project": {
+    vi: "Gán dự án",
+    en: "Assign project",
+  },
+  "save": {
+    vi: "Lưu",
+    en: "Save",
+  },
 };
 
 interface LanguageContextType {

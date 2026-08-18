@@ -16,9 +16,14 @@ export async function POST(req: NextRequest) {
   const text = (body?.text ?? "").trim();
   const startDate = (body?.startDate ?? "").trim();
   const endDate = (body?.endDate ?? "").trim();
+  const projectId = (body?.projectId ?? "").trim();
 
   if (!text) {
     return NextResponse.json({ error: "Text is required" }, { status: 400 });
+  }
+
+  if (!projectId) {
+    return NextResponse.json({ error: "Project is required" }, { status: 400 });
   }
 
   const todos = await getTodos();
@@ -32,6 +37,7 @@ export async function POST(req: NextRequest) {
 
   const newTodo: Todo = {
     id: randomUUID(),
+    projectId,
     text,
     done: false,
     createdAt: Date.now(),

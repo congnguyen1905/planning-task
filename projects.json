@@ -1,0 +1,15 @@
+[
+  {
+    "id": "default",
+    "name": "Dự án mặc định",
+    "description": "Dự án chung cho tất cả các công việc",
+    "color": "#f59e0b",
+    "createdAt": 0
+  },
+  {
+    "id": "f012b9a9-aaa4-494a-b51e-8e808ebc33a5",
+    "name": "test project",
+    "color": "#10b981",
+    "createdAt": 1787065832138
+  }
+]

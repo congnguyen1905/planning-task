@@ -1,3 +1,11 @@
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  createdAt: number;
+}
+
 export interface SubTodo {
   id: string;
   text: string;
@@ -9,6 +17,7 @@ export interface SubTodo {
 
 export interface Todo {
   id: string;
+  projectId?: string;
   text: string;
   done: boolean;
   createdAt: number;
@@ -16,3 +25,4 @@ export interface Todo {
   endDate: string;
   subtodos: SubTodo[];
 }
+

@@ -10,6 +10,8 @@ export function TodoRow({
   todo,
   rangeStart,
   rangeEnd,
+  projectName,
+  projectColor,
   onToggle,
   onChangeDateRange,
   onDelete,
@@ -17,10 +19,13 @@ export function TodoRow({
   onToggleSub,
   onDeleteSub,
   onChangeSubDateRange,
+  onAssignProject,
 }: {
   todo: Todo;
   rangeStart: string;
   rangeEnd: string;
+  projectName?: string;
+  projectColor?: string;
   onToggle: (done: boolean) => void;
   onChangeDateRange: (startDate: string, endDate: string) => void;
   onDelete: () => void;
@@ -28,6 +33,7 @@ export function TodoRow({
   onToggleSub: (subId: string, done: boolean) => void;
   onDeleteSub: (subId: string) => void;
   onChangeSubDateRange: (subId: string, startDate: string, endDate: string) => void;
+  onAssignProject?: (todo: Todo) => void;
 }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(true);
@@ -63,15 +69,39 @@ export function TodoRow({
           checked={todo.done}
           onChange={(e) => onToggle(e.target.checked)}
         />
-        <span
-          className={`flex-1 text-[15px] transition-colors ${
-            todo.done
-              ? "text-[var(--ink-faint)] line-through"
-              : "text-[var(--ink)]"
-          }`}
-        >
-          {todo.text}
-        </span>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          {projectName ? (
+            <span
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-mono border flex-shrink-0"
+              style={{
+                borderColor: `${projectColor || "#f59e0b"}40`,
+                backgroundColor: `${projectColor || "#f59e0b"}15`,
+                color: projectColor || "#f59e0b",
+              }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: projectColor || "#f59e0b" }} />
+              {projectName}
+            </span>
+          ) : !todo.projectId && onAssignProject ? (
+            <button
+              type="button"
+              onClick={() => onAssignProject(todo)}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-mono border border-[var(--amber)]/50 text-[var(--amber)] hover:bg-[var(--amber)] hover:text-[#1c1b19] transition-colors flex-shrink-0"
+              title={t("assign_project")}
+            >
+              + Dự án
+            </button>
+          ) : null}
+          <span
+            className={`truncate text-[15px] transition-colors ${
+              todo.done
+                ? "text-[var(--ink-faint)] line-through"
+                : "text-[var(--ink)]"
+            }`}
+          >
+            {todo.text}
+          </span>
+        </div>
 
         <div className="flex items-center gap-1">
           <input
