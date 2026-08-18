@@ -304,6 +304,8 @@ export default function Home() {
                   updateSubTodo(parentId, subId, { startDate, endDate })
                 }
                 onSelectTodo={(todo) => setAssigningTodo(todo)}
+                onToggleTodo={(id, done) => updateTodo(id, { done })}
+                onToggleSubTodo={(parentId, subId, done) => updateSubTodo(parentId, subId, { done })}
               />
             ) : (
               <div className="space-y-8">

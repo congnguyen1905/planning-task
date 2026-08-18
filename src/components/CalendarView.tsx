@@ -69,6 +69,8 @@ export function CalendarView({
   onUpdateTodo,
   onUpdateSubTodo,
   onSelectTodo,
+  onToggleTodo,
+  onToggleSubTodo,
 }: {
   todos: Todo[];
   rangeStart: string;
@@ -77,15 +79,40 @@ export function CalendarView({
   onUpdateTodo?: (id: string, startDate: string, endDate: string) => void;
   onUpdateSubTodo?: (parentId: string, subId: string, startDate: string, endDate: string) => void;
   onSelectTodo?: (todo: Todo) => void;
+  onToggleTodo?: (id: string, done: boolean) => void;
+  onToggleSubTodo?: (parentId: string, subId: string, done: boolean) => void;
 }) {
   const { t, language } = useLanguage();
   const today = formatDateKey(new Date());
   const days = useMemo(() => enumerateDateRange(rangeStart, rangeEnd), [rangeStart, rangeEnd]);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
+  const sortedTodos = useMemo(() => {
+    return [...todos].sort((a, b) => {
+      // 1. Sort by Project Name (unassigned projects placed at the end)
+      const projA = a.projectId ? projectsMap?.[a.projectId]?.name || a.projectId : "\uFFFF";
+      const projB = b.projectId ? projectsMap?.[b.projectId]?.name || b.projectId : "\uFFFF";
+      const projCompare = projA.localeCompare(projB, language === "vi" ? "vi" : "en");
+      if (projCompare !== 0) return projCompare;
+
+      // 2. Sort by Start Date ascending ("YYYY-MM-DD")
+      if (a.startDate !== b.startDate) {
+        return a.startDate.localeCompare(b.startDate);
+      }
+
+      // 3. Sort by End Date ascending
+      if (a.endDate !== b.endDate) {
+        return a.endDate.localeCompare(b.endDate);
+      }
+
+      // 4. Stable fallback by creation time / ID
+      return (a.createdAt || 0) - (b.createdAt || 0) || a.id.localeCompare(b.id);
+    });
+  }, [todos, projectsMap, language]);
+
   const rows: Row[] = useMemo(() => {
     const result: Row[] = [];
-    for (const todo of todos) {
+    for (const todo of sortedTodos) {
       result.push({
         key: todo.id,
         projectId: todo.projectId,
@@ -96,7 +123,15 @@ export function CalendarView({
         done: todo.done,
         todo,
       });
-      for (const sub of todo.subtodos) {
+
+      const sortedSubtodos = [...todo.subtodos].sort((sa, sb) => {
+        if (sa.startDate !== sb.startDate) {
+          return sa.startDate.localeCompare(sb.startDate);
+        }
+        return (sa.createdAt || 0) - (sb.createdAt || 0) || sa.id.localeCompare(sb.id);
+      });
+
+      for (const sub of sortedSubtodos) {
         result.push({
           key: sub.id,
           parentId: todo.id,
@@ -111,7 +146,7 @@ export function CalendarView({
       }
     }
     return result;
-  }, [todos]);
+  }, [sortedTodos]);
 
   useEffect(() => {
     if (!dragState) return;
@@ -286,6 +321,22 @@ export function CalendarView({
                           }
                         }}
                       >
+                        <input
+                          type="checkbox"
+                          checked={row.done}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (row.isSub && row.parentId) {
+                              onToggleSubTodo?.(row.parentId, row.key, e.target.checked);
+                            } else {
+                              onToggleTodo?.(row.key, e.target.checked);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-3.5 w-3.5 rounded border border-[var(--hairline)] bg-[var(--bg)] accent-[var(--amber)] cursor-pointer shrink-0"
+                          title={row.done ? t("status_done") : t("status_not_started")}
+                        />
+
                         {row.projectId && projectsMap?.[row.projectId] ? (
                           <span
                             className="h-2 w-2 rounded-full flex-shrink-0"
