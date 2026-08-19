@@ -14,8 +14,8 @@ interface Translations {
 const translations: Translations = {
   // Page titles and headers
   "app_title": {
-    vi: "Việc hôm nay",
-    en: "Today's Tasks",
+    vi: "Quản lý công việc hàng ngày",
+    en: "Manager's Daily Tasks",
   },
   "today_label": {
     vi: "Hôm nay",
