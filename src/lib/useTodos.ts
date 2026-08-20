@@ -4,6 +4,20 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Todo } from "./types";
 import { saveTodos as saveStoredTodos } from "./store";
 
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = localStorage.getItem("current_user");
+    if (stored) {
+      const user = JSON.parse(stored);
+      if (user?.username) {
+        return { "x-user-username": user.username };
+      }
+    }
+  } catch {}
+  return {};
+}
+
 function mergeTodos(localTodos: Todo[], remoteTodos: Todo[]): Todo[] {
   const mergedMap = new Map<string, Todo>();
 
@@ -61,7 +75,9 @@ export function useTodos(useDataApi = false) {
       const currentTodos = todosRef.current;
       setError(null);
 
-      const res = await fetch(apiPath);
+      const res = await fetch(apiPath, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
         return;
       }
@@ -108,7 +124,10 @@ export function useTodos(useDataApi = false) {
     try {
       const res = await fetch("/api/todos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({ text, startDate, endDate, projectId }),
       });
       const json = await res.json();
@@ -144,7 +163,10 @@ export function useTodos(useDataApi = false) {
     try {
       const res = await fetch(`/api/todos/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify(patch),
       });
       const json = await res.json();
@@ -161,7 +183,10 @@ export function useTodos(useDataApi = false) {
   async function deleteTodo(id: string) {
     isMutatingRef.current = true;
     try {
-      const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/todos/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
       const json = await res.json();
       const serverTodos = (json?.todos as Todo[]) ?? [];
       await syncTodosFromServer(serverTodos);
@@ -179,7 +204,10 @@ export function useTodos(useDataApi = false) {
       const serverTodos = await runMutationWithRefresh(() =>
         fetch(`/api/todos/${todoId}/subtodos`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
           body: JSON.stringify({ text, startDate, endDate }),
         })
       );
@@ -202,7 +230,10 @@ export function useTodos(useDataApi = false) {
       const serverTodos = await runMutationWithRefresh(() =>
         fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
           body: JSON.stringify(patch),
         })
       );
@@ -221,6 +252,7 @@ export function useTodos(useDataApi = false) {
       const serverTodos = await runMutationWithRefresh(() =>
         fetch(`/api/todos/${todoId}/subtodos/${subId}`, {
           method: "DELETE",
+          headers: getAuthHeaders(),
         })
       );
       await syncTodosFromServer(serverTodos);

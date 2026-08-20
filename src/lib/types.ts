@@ -15,9 +15,18 @@ export interface SubTodo {
   endDate: string;
 }
 
+export interface Account {
+  id: number;
+  fullname: string;
+  username: string;
+  password?: string;
+  color: "coral" | "blue" | "gold" | "mint";
+}
+
 export interface Todo {
   id: string;
   projectId?: string;
+  username?: string;
   text: string;
   done: boolean;
   createdAt: number;

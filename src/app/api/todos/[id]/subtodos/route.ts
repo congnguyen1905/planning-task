@@ -2,13 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getTodos, saveTodos } from "@/lib/store";
 import { reconcileDateRange, syncParentWithSubtodos } from "@/lib/date";
-import type { SubTodo } from "@/lib/types";
+import type { SubTodo, Todo } from "@/lib/types";
+
+function getUserFromReq(req: NextRequest): string | null {
+  const headerUsername = req.headers.get("x-user-username");
+  if (headerUsername && headerUsername.trim()) {
+    return headerUsername.trim();
+  }
+  const queryUsername = req.nextUrl.searchParams.get("username");
+  if (queryUsername && queryUsername.trim()) {
+    return queryUsername.trim();
+  }
+  return null;
+}
+
+function filterTodosForUser(todos: Todo[], username: string | null): Todo[] {
+  return todos.filter((todo) => {
+    if (!todo.username) return true;
+    if (!username) return true;
+    return todo.username.toLowerCase() === username.toLowerCase();
+  });
+}
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const username = getUserFromReq(req);
   const body = await req.json();
   const text = (body?.text ?? "").trim();
   const startDate = (body?.startDate ?? "").trim();
@@ -23,6 +44,10 @@ export async function POST(
 
   if (!todo) {
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });
+  }
+
+  if (username) {
+    todo.username = username;
   }
 
   const resolvedStart = startDate || todo.startDate;
@@ -42,10 +67,13 @@ export async function POST(
     endDate: safeEnd,
   };
   todo.subtodos.push(newSub);
-  
-  // Sync parent date bounds and done status based on all subtodos
+
   syncParentWithSubtodos(todo);
 
   await saveTodos(todos);
-  return NextResponse.json({ todos }, { status: 201 });
+
+  const filtered = filterTodosForUser(todos, username);
+  filtered.sort((a, b) => b.createdAt - a.createdAt);
+
+  return NextResponse.json({ todos: filtered }, { status: 201 });
 }

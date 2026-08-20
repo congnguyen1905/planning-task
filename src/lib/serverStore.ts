@@ -1,4 +1,4 @@
-import type { Todo, Project } from "./types";
+import type { Todo, Project, Account } from "./types";
 
 const REDIS_KEY = "daily-todos:list";
 const REDIS_PROJECTS_KEY = "daily-todos:projects";
@@ -127,6 +127,29 @@ export async function saveProjectsToServerStore(projects: Project[]): Promise<vo
   }
 
   await writeToFile(filePath, projects);
+}
+
+export async function getAccountsFromServerStore(): Promise<Account[]> {
+  const filePath = await getDataFilePath(process.env.VERCEL ? "/tmp/accounts.json" : "accounts.json");
+  if (!filePath) {
+    return [];
+  }
+
+  try {
+    const fs = await import("node:fs/promises");
+    const raw = await fs.readFile(filePath, "utf8");
+    if (!raw.trim()) return [];
+    const parsed = JSON.parse(raw) as Account[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveAccountsToServerStore(accounts: Account[]): Promise<void> {
+  const filePath = await getDataFilePath(process.env.VERCEL ? "/tmp/accounts.json" : "accounts.json");
+  if (!filePath) return;
+  await writeToFile(filePath, accounts);
 }
 
 export function getRedisKey(): string {

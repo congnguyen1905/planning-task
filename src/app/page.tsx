@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTodos } from "@/lib/useTodos";
 import { useProjects } from "@/lib/useProjects";
 import { AddTodoForm } from "@/components/AddTodoForm";
@@ -32,9 +33,37 @@ function startOfWeek(date: Date): Date {
 }
 
 export default function Home() {
+  const router = useRouter();
   const { language, t } = useLanguage();
   const { settings } = useThemeContext();
   const isClassic = settings.style === "classic";
+
+  const [currentUser, setCurrentUser] = useState<{ fullname: string; username: string; color?: string } | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("current_user");
+    if (!stored) {
+      router.replace("/account-selector");
+    } else {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.username) {
+          setCurrentUser(parsed);
+          setIsAuthenticated(true);
+        } else {
+          router.replace("/account-selector");
+        }
+      } catch {
+        router.replace("/account-selector");
+      }
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("current_user");
+    router.replace("/account-selector");
+  };
 
   const todayKey = formatDateKey(new Date());
   const [rangeStart, setRangeStart] = useState(formatDateKey(startOfWeek(new Date())));
@@ -194,9 +223,34 @@ export default function Home() {
     </header>
   );
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[var(--bg)] grid place-items-center">
+        <p className="font-mono text-sm text-[var(--ink-muted)]">Đang chuyển hướng sang trang đăng nhập...</p>
+      </div>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[var(--bg)]">
-      <LanguageSwitcher />
+      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
+        {currentUser && (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--hairline)] shadow-xs text-xs font-sans">
+            <span className="w-5 h-5 rounded-full bg-[var(--amber)] text-white font-bold flex items-center justify-center text-[10px]">
+              {currentUser.fullname.charAt(0)}
+            </span>
+            <span className="font-semibold text-[var(--ink)]">{currentUser.fullname}</span>
+            <button
+              onClick={handleLogout}
+              type="button"
+              className="text-[var(--danger)] hover:underline ml-1 font-mono text-[11px] cursor-pointer"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        )}
+        <LanguageSwitcher />
+      </div>
 
       <CreateProjectModal
         isOpen={isModalOpen}

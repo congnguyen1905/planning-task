@@ -1,5 +1,5 @@
 import { getRedis, isRedisConfigured } from "./redis";
-import type { Todo, Project } from "./types";
+import type { Todo, Project, Account } from "./types";
 
 const REDIS_KEY = "daily-todos:list";
 const REDIS_PROJECTS_KEY = "daily-todos:projects";
@@ -62,9 +62,6 @@ export async function getProjects(): Promise<Project[]> {
   return [];
 }
 
-/**
- * Save projects to Redis when configured; otherwise to the server-side JSON file.
- */
 export async function saveProjects(projects: Project[]): Promise<void> {
   if (isRedisConfigured()) {
     const redis = getRedis();
@@ -77,6 +74,38 @@ export async function saveProjects(projects: Project[]): Promise<void> {
   if (typeof window === "undefined") {
     const { saveProjectsToServerStore } = await import("./serverStore");
     await saveProjectsToServerStore(projects);
+  }
+}
+
+export async function getAccounts(): Promise<Account[]> {
+  if (isRedisConfigured()) {
+    const redis = getRedis();
+    if (redis) {
+      const data = await redis.get<Account[]>("daily-todos:accounts");
+      if (data && data.length > 0) return data;
+    }
+  }
+
+  if (typeof window === "undefined") {
+    const { getAccountsFromServerStore } = await import("./serverStore");
+    return getAccountsFromServerStore();
+  }
+
+  return [];
+}
+
+export async function saveAccounts(accounts: Account[]): Promise<void> {
+  if (isRedisConfigured()) {
+    const redis = getRedis();
+    if (redis) {
+      await redis.set("daily-todos:accounts", accounts);
+      return;
+    }
+  }
+
+  if (typeof window === "undefined") {
+    const { saveAccountsToServerStore } = await import("./serverStore");
+    await saveAccountsToServerStore(accounts);
   }
 }
 

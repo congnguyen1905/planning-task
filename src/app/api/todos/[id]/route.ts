@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTodos, saveTodos } from "@/lib/store";
-import { getDaysDiff, reconcileDateRange, shiftSubtodos, syncParentWithSubtodos } from "@/lib/date";
+import { reconcileDateRange, syncParentWithSubtodos } from "@/lib/date";
+import type { Todo } from "@/lib/types";
+
+function getUserFromReq(req: NextRequest): string | null {
+  const headerUsername = req.headers.get("x-user-username");
+  if (headerUsername && headerUsername.trim()) {
+    return headerUsername.trim();
+  }
+  const queryUsername = req.nextUrl.searchParams.get("username");
+  if (queryUsername && queryUsername.trim()) {
+    return queryUsername.trim();
+  }
+  return null;
+}
+
+function filterTodosForUser(todos: Todo[], username: string | null): Todo[] {
+  return todos.filter((todo) => {
+    if (!todo.username) return true;
+    if (!username) return true;
+    return todo.username.toLowerCase() === username.toLowerCase();
+  });
+}
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const username = getUserFromReq(req);
   const body = await req.json();
 
   const todos = await getTodos();
@@ -14,6 +36,11 @@ export async function PATCH(
 
   if (!todo) {
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });
+  }
+
+  // Claim ownership if user is logged in
+  if (username) {
+    todo.username = username;
   }
 
   if (typeof body.text === "string" && body.text.trim()) {
@@ -37,24 +64,26 @@ export async function PATCH(
 
   if (typeof body.done === "boolean") {
     todo.done = body.done;
-    // Toggling the parent done state cascades to its subtodos.
     if (todo.subtodos && todo.subtodos.length > 0) {
       todo.subtodos = todo.subtodos.map((s) => ({ ...s, done: body.done }));
     }
   }
 
-  // Ensure parent always reflects subtodos bounds and completion
   syncParentWithSubtodos(todo);
-
   await saveTodos(todos);
-  return NextResponse.json({ todos });
+
+  const filtered = filterTodosForUser(todos, username);
+  filtered.sort((a, b) => b.createdAt - a.createdAt);
+
+  return NextResponse.json({ todos: filtered });
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const username = getUserFromReq(req);
   const todos = await getTodos();
   const next = todos.filter((t) => t.id !== id);
 
@@ -63,5 +92,9 @@ export async function DELETE(
   }
 
   await saveTodos(next);
-  return NextResponse.json({ todos: next });
+
+  const filtered = filterTodosForUser(next, username);
+  filtered.sort((a, b) => b.createdAt - a.createdAt);
+
+  return NextResponse.json({ todos: filtered });
 }
