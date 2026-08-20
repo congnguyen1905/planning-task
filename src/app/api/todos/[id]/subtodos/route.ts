@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getTodos, saveTodos } from "@/lib/store";
-import { reconcileDateRange } from "@/lib/date";
+import { reconcileDateRange, syncParentWithSubtodos } from "@/lib/date";
 import type { SubTodo } from "@/lib/types";
 
 export async function POST(
@@ -42,8 +42,9 @@ export async function POST(
     endDate: safeEnd,
   };
   todo.subtodos.push(newSub);
-  // Adding a new (undone) subtask reopens the parent if it was done.
-  if (todo.done) todo.done = false;
+  
+  // Sync parent date bounds and done status based on all subtodos
+  syncParentWithSubtodos(todo);
 
   await saveTodos(todos);
   return NextResponse.json({ todos }, { status: 201 });

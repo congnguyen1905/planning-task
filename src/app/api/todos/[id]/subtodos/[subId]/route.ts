@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTodos, saveTodos } from "@/lib/store";
-import { reconcileDateRange } from "@/lib/date";
+import { reconcileDateRange, syncParentWithSubtodos } from "@/lib/date";
 
 export async function PATCH(
   req: NextRequest,
@@ -35,14 +35,10 @@ export async function PATCH(
 
   if (typeof body.done === "boolean") {
     sub.done = body.done;
-    // If every subtask is done, mark the parent done too.
-    // If any subtask becomes undone, the parent can't stay done.
-    if (!body.done) {
-      todo.done = false;
-    } else if (todo.subtodos.every((s) => s.done)) {
-      todo.done = true;
-    }
   }
+
+  // Recalculate parent date bounds and done status
+  syncParentWithSubtodos(todo);
 
   await saveTodos(todos);
   return NextResponse.json({ todos });
@@ -61,6 +57,7 @@ export async function DELETE(
   }
 
   todo.subtodos = todo.subtodos.filter((s) => s.id !== subId);
+  syncParentWithSubtodos(todo);
 
   await saveTodos(todos);
   return NextResponse.json({ todos });

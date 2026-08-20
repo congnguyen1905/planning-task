@@ -372,6 +372,8 @@ export function CalendarView({
                     const isStartCell = day === effectiveStart;
                     const isEndCell = day === effectiveEnd;
 
+                    const isParentWithSubtasks = !row.isSub && row.todo.subtodos.length > 0;
+
                     return (
                       <td
                         key={day}
@@ -379,51 +381,87 @@ export function CalendarView({
                         className="border-l border-b border-[var(--hairline)] p-0 relative"
                       >
                         {inRange ? (
-                          <div
-                            className={`h-6 w-full relative group/bar select-none cursor-grab active:cursor-grabbing transition-shadow ${
-                              isStartCell ? "rounded-l-sm" : ""
-                            } ${isEndCell ? "rounded-r-sm" : ""} ${
-                              isRowDragging ? "ring-2 ring-[var(--amber)] shadow-lg z-20 opacity-90" : "hover:opacity-90"
-                            }`}
-                            style={{ backgroundColor: style.bg }}
-                            title={`${row.label} (${formatDateLabel(effectiveStart, language)} — ${formatDateLabel(effectiveEnd, language)})`}
-                            onClick={(e) => {
-                              // If task has no project, click on calendar bar also opens assign project modal!
-                              if (!row.projectId && !row.isSub && onSelectTodo) {
-                                e.stopPropagation();
-                                onSelectTodo(row.todo);
-                              }
-                            }}
-                            onPointerDown={(e) => {
-                              const target = e.target as HTMLElement;
-                              if (target.dataset.handle) return;
-                              handleStartDrag(e, row, "move", day);
-                            }}
-                          >
-                            {/* Left Resize Handle */}
-                            {isStartCell && (
+                          isParentWithSubtasks ? (
+                            /* Parent Todo with Subtasks: 1 thin summary line to distinguish parent planning */
+                            <div
+                              className="h-6 w-full flex items-center relative select-none"
+                              title={`${row.label} (${formatDateLabel(effectiveStart, language)} — ${formatDateLabel(effectiveEnd, language)}) - Kế hoạch tổng quan theo Subtask`}
+                              onClick={(e) => {
+                                if (!row.projectId && onSelectTodo) {
+                                  e.stopPropagation();
+                                  onSelectTodo(row.todo);
+                                }
+                              }}
+                            >
                               <div
-                                data-handle="left"
-                                onPointerDown={(e) => handleStartDrag(e, row, "resize-start", day)}
-                                className="absolute left-0 top-0 bottom-0 w-3 z-30 cursor-ew-resize flex items-center justify-center hover:bg-black/30 rounded-l-sm transition-colors group/handle-left"
-                                title={language === "vi" ? "Kéo cạnh trái để chỉnh ngày bắt đầu" : "Drag left edge to change start date"}
+                                className={`h-2 w-full relative transition-all ${
+                                  isStartCell ? "rounded-l-full" : ""
+                                } ${isEndCell ? "rounded-r-full" : ""}`}
+                                style={{ backgroundColor: style.bg }}
                               >
-                                <div className="w-1 h-3.5 bg-white/80 rounded-full shadow-sm group-hover/handle-left:bg-white group-hover/handle-left:scale-110 transition-all" />
+                                {isStartCell && (
+                                  <div
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-sm"
+                                    style={{ backgroundColor: style.bg }}
+                                    title="Start"
+                                  />
+                                )}
+                                {isEndCell && (
+                                  <div
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-sm"
+                                    style={{ backgroundColor: style.bg }}
+                                    title="End"
+                                  />
+                                )}
                               </div>
-                            )}
+                            </div>
+                          ) : (
+                            /* Normal Task or Subtask Bar */
+                            <div
+                              className={`h-6 w-full relative group/bar select-none cursor-grab active:cursor-grabbing hover:opacity-90 transition-shadow ${
+                                isStartCell ? "rounded-l-sm" : ""
+                              } ${isEndCell ? "rounded-r-sm" : ""} ${
+                                isRowDragging ? "ring-2 ring-[var(--amber)] shadow-lg z-20 opacity-90" : ""
+                              }`}
+                              style={{ backgroundColor: style.bg }}
+                              title={`${row.label} (${formatDateLabel(effectiveStart, language)} — ${formatDateLabel(effectiveEnd, language)})`}
+                              onClick={(e) => {
+                                if (!row.projectId && !row.isSub && onSelectTodo) {
+                                  e.stopPropagation();
+                                  onSelectTodo(row.todo);
+                                }
+                              }}
+                              onPointerDown={(e) => {
+                                const target = e.target as HTMLElement;
+                                if (target.dataset.handle) return;
+                                handleStartDrag(e, row, "move", day);
+                              }}
+                            >
+                              {/* Left Resize Handle */}
+                              {isStartCell && (
+                                <div
+                                  data-handle="left"
+                                  onPointerDown={(e) => handleStartDrag(e, row, "resize-start", day)}
+                                  className="absolute left-0 top-0 bottom-0 w-3 z-30 cursor-ew-resize flex items-center justify-center hover:bg-black/30 rounded-l-sm transition-colors group/handle-left"
+                                  title={language === "vi" ? "Kéo cạnh trái để chỉnh ngày bắt đầu" : "Drag left edge to change start date"}
+                                >
+                                  <div className="w-1 h-3.5 bg-white/80 rounded-full shadow-sm group-hover/handle-left:bg-white group-hover/handle-left:scale-110 transition-all" />
+                                </div>
+                              )}
 
-                            {/* Right Resize Handle */}
-                            {isEndCell && (
-                              <div
-                                data-handle="right"
-                                onPointerDown={(e) => handleStartDrag(e, row, "resize-end", day)}
-                                className="absolute right-0 top-0 bottom-0 w-3 z-30 cursor-ew-resize flex items-center justify-center hover:bg-black/30 rounded-r-sm transition-colors group/handle-right"
-                                title={language === "vi" ? "Kéo cạnh phải để chỉnh ngày kết thúc" : "Drag right edge to change end date"}
-                              >
-                                <div className="w-1 h-3.5 bg-white/80 rounded-full shadow-sm group-hover/handle-right:bg-white group-hover/handle-right:scale-110 transition-all" />
-                              </div>
-                            )}
-                          </div>
+                              {/* Right Resize Handle */}
+                              {isEndCell && (
+                                <div
+                                  data-handle="right"
+                                  onPointerDown={(e) => handleStartDrag(e, row, "resize-end", day)}
+                                  className="absolute right-0 top-0 bottom-0 w-3 z-30 cursor-ew-resize flex items-center justify-center hover:bg-black/30 rounded-r-sm transition-colors group/handle-right"
+                                  title={language === "vi" ? "Kéo cạnh phải để chỉnh ngày kết thúc" : "Drag right edge to change end date"}
+                                >
+                                  <div className="w-1 h-3.5 bg-white/80 rounded-full shadow-sm group-hover/handle-right:bg-white group-hover/handle-right:scale-110 transition-all" />
+                                </div>
+                              )}
+                            </div>
+                          )
                         ) : (
                           <div className="h-6 w-full" />
                         )}

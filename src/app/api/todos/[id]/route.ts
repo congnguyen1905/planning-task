@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTodos, saveTodos } from "@/lib/store";
-import { reconcileDateRange } from "@/lib/date";
+import { getDaysDiff, reconcileDateRange, shiftSubtodos, syncParentWithSubtodos } from "@/lib/date";
 
 export async function PATCH(
   req: NextRequest,
@@ -26,10 +26,9 @@ export async function PATCH(
 
   const startChanged = typeof body.startDate === "string" && body.startDate.trim().length > 0;
   const endChanged = typeof body.endDate === "string" && body.endDate.trim().length > 0;
-  if (startChanged || endChanged) {
+  if ((startChanged || endChanged) && (!todo.subtodos || todo.subtodos.length === 0)) {
     const nextStart = startChanged ? body.startDate.trim() : todo.startDate;
     const nextEnd = endChanged ? body.endDate.trim() : todo.endDate;
-    // If both changed at once, treat endDate as the field that "wins" the conflict.
     const changedField = endChanged ? "end" : "start";
     const reconciled = reconcileDateRange(nextStart, nextEnd, changedField);
     todo.startDate = reconciled.startDate;
@@ -39,8 +38,13 @@ export async function PATCH(
   if (typeof body.done === "boolean") {
     todo.done = body.done;
     // Toggling the parent done state cascades to its subtodos.
-    todo.subtodos = todo.subtodos.map((s) => ({ ...s, done: body.done }));
+    if (todo.subtodos && todo.subtodos.length > 0) {
+      todo.subtodos = todo.subtodos.map((s) => ({ ...s, done: body.done }));
+    }
   }
+
+  // Ensure parent always reflects subtodos bounds and completion
+  syncParentWithSubtodos(todo);
 
   await saveTodos(todos);
   return NextResponse.json({ todos });

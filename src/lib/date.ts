@@ -89,6 +89,14 @@ export function isWithinFilterRange(
   return rangesOverlap(taskStart, taskEnd, filterStart, filterEnd);
 }
 
+export function getDaysDiff(startKey: string, endKey: string): number {
+  const [y1, m1, d1] = startKey.split("-").map(Number);
+  const [y2, m2, d2] = endKey.split("-").map(Number);
+  const date1 = Date.UTC(y1, m1 - 1, d1);
+  const date2 = Date.UTC(y2, m2 - 1, d2);
+  return Math.round((date2 - date1) / (86400 * 1000));
+}
+
 export function reconcileDateRange(
   startDate: string,
   endDate: string,
@@ -101,3 +109,54 @@ export function reconcileDateRange(
   }
   return { startDate, endDate };
 }
+
+/**
+ * Tự động đồng bộ Todo cha theo danh sách SubTodo con:
+ * - Nếu có SubTodo:
+ *   - startDate = min(sub.startDate)
+ *   - endDate = max(sub.endDate)
+ *   - done = tất cả sub.done đều là true (nếu subtodos.length > 0)
+ */
+export function syncParentWithSubtodos<
+  T extends {
+    startDate: string;
+    endDate: string;
+    done: boolean;
+    subtodos?: Array<{ startDate: string; endDate: string; done: boolean }>;
+  }
+>(todo: T): T {
+  if (!todo.subtodos || todo.subtodos.length === 0) {
+    return todo;
+  }
+
+  let minStart = todo.subtodos[0].startDate;
+  let maxEnd = todo.subtodos[0].endDate;
+  let allDone = true;
+
+  for (const sub of todo.subtodos) {
+    if (sub.startDate < minStart) minStart = sub.startDate;
+    if (sub.endDate > maxEnd) maxEnd = sub.endDate;
+    if (!sub.done) allDone = false;
+  }
+
+  todo.startDate = minStart;
+  todo.endDate = maxEnd;
+  todo.done = allDone;
+
+  return todo;
+}
+
+/**
+ * Dịch chuyển danh sách subtodos theo một delta số ngày
+ */
+export function shiftSubtodos<S extends { startDate: string; endDate: string }>(
+  subtodos: S[],
+  deltaDays: number
+): S[] {
+  if (deltaDays === 0) return subtodos;
+  return subtodos.map((sub) => ({
+    ...sub,
+    startDate: addDaysToDateKey(sub.startDate, deltaDays),
+    endDate: addDaysToDateKey(sub.endDate, deltaDays),
+  }));
+}

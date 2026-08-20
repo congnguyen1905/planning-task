@@ -40,11 +40,13 @@ export function TodoRow({
   const [subText, setSubText] = useState("");
   const [subStartDate, setSubStartDate] = useState(todo.startDate);
   const [subEndDate, setSubEndDate] = useState(todo.endDate);
+  const [prevDates, setPrevDates] = useState({ start: todo.startDate, end: todo.endDate });
 
-  useEffect(() => {
+  if (prevDates.start !== todo.startDate || prevDates.end !== todo.endDate) {
+    setPrevDates({ start: todo.startDate, end: todo.endDate });
     setSubStartDate(todo.startDate);
     setSubEndDate(todo.endDate);
-  }, [todo.startDate, todo.endDate]);
+  }
 
   const visibleSubtasks = todo.subtodos.filter((sub) =>
     isWithinFilterRange(sub.startDate, sub.endDate, rangeStart, rangeEnd)
@@ -107,31 +109,52 @@ export function TodoRow({
           <input
             type="date"
             value={todo.startDate}
+            disabled={todo.subtodos.length > 0}
+            title={
+              todo.subtodos.length > 0
+                ? "Ngày bắt đầu tự động tính theo Subtask"
+                : undefined
+            }
             onChange={(e) => {
               const next = reconcileDateRange(e.target.value, todo.endDate, "start");
               onChangeDateRange(next.startDate, next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)] disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <span className="text-[10px] text-[var(--ink-faint)]">→</span>
           <input
             type="date"
             value={todo.endDate}
+            disabled={todo.subtodos.length > 0}
+            title={
+              todo.subtodos.length > 0
+                ? "Ngày kết thúc tự động tính theo Subtask"
+                : undefined
+            }
             onChange={(e) => {
               const next = reconcileDateRange(todo.startDate, e.target.value, "end");
               onChangeDateRange(next.startDate, next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
+            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)] disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
         {total > 0 && (
           <button
             onClick={() => setOpen((v) => !v)}
-            className="font-mono text-xs text-[var(--ink-faint)] hover:text-[var(--amber)] transition-colors tabular-nums"
+            className="inline-flex items-center gap-1.5 rounded bg-[var(--surface)] px-2 py-0.5 font-mono text-xs text-[var(--ink-muted)] hover:text-[var(--amber)] border border-[var(--hairline)] transition-colors tabular-nums"
             aria-label={t("toggle_subtasks")}
+            title={`Tiến độ subtask: ${doneCount}/${total} (${Math.round((doneCount / total) * 100)}%)`}
           >
-            {doneCount}/{total} {open ? "▾" : "▸"}
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                doneCount === total ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            <span>
+              {doneCount}/{total} ({Math.round((doneCount / total) * 100)}%)
+            </span>
+            <span className="text-[10px] text-[var(--ink-faint)]">{open ? "▾" : "▸"}</span>
           </button>
         )}
 
