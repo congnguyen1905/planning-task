@@ -285,12 +285,21 @@ export default function Home() {
         }}
       />
 
+      <CustomDateRangePicker
+        open={isDatePickerOpen}
+        startDate={rangeStart}
+        endDate={rangeEnd}
+        title={language === "vi" ? "Chọn khoảng thời gian Lịch" : "Select Date Range Filter"}
+        onClose={() => setIsDatePickerOpen(false)}
+        onApply={(start, end) => setRange(start, end)}
+      />
+
       <div className={`w-full px-4 sm:px-8 xl:px-12 ${isClassic ? "py-6 lg:py-8" : "py-10 lg:py-14"}`}>
         {isClassic && headerComponent}
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[340px_1fr] lg:items-start">
           {/* LEFT — sidebar: header + bộ lọc dự án + bộ lọc ngày + toggle view + form thêm việc */}
-          <aside className="space-y-6 lg:sticky lg:top-6">
+          <aside className="space-y-6 lg:sticky lg:top-6 z-20">
             {!isClassic && headerComponent}
 
             {/* PROJECTS SECTION */}
@@ -383,15 +392,6 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-
-            <CustomDateRangePicker
-              open={isDatePickerOpen}
-              startDate={rangeStart}
-              endDate={rangeEnd}
-              title={language === "vi" ? "Chọn khoảng thời gian Lịch" : "Select Date Range Filter"}
-              onClose={() => setIsDatePickerOpen(false)}
-              onApply={(start, end) => setRange(start, end)}
-            />
 
             {/* VIEW SWITCHER */}
             <div className="inline-flex w-full rounded-xl border border-[var(--hairline)] bg-[var(--surface-raised)]/60 p-1 gap-1">

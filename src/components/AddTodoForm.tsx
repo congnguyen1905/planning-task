@@ -5,6 +5,7 @@ import { formatDateKey, reconcileDateRange } from "@/lib/date";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "./Button";
 import { DatePicker } from "./DatePicker";
+import { Select } from "./Select";
 import type { Project } from "@/lib/types";
 
 export function AddTodoForm({
@@ -72,23 +73,21 @@ export function AddTodoForm({
           <span className="font-mono text-[11px] uppercase tracking-wider">
             {t("select_project")} <span className="text-[var(--amber)]">*</span>
           </span>
-          <select
+          <Select
             value={targetProjectId}
             required
+            sizeVariant="sm"
             onChange={(e) => setTargetProjectId(e.target.value)}
-            className={`rounded-sm border px-2 py-1 text-sm bg-[var(--bg)] text-[var(--ink)] focus:outline-none focus:border-[var(--amber)] ${
-              !targetProjectId ? "border-amber-500/50" : "border-[var(--hairline)]"
-            }`}
           >
-            <option value="" disabled className="bg-[var(--bg)] text-[var(--ink-faint)]">
+            <option value="" disabled className="bg-[var(--surface)] text-[var(--ink-faint)]">
               -- {t("select_project")} --
             </option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id} className="bg-[var(--bg)] text-[var(--ink)]">
+              <option key={p.id} value={p.id} className="bg-[var(--surface)] text-[var(--ink)]">
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <div className="flex items-center justify-between gap-2">

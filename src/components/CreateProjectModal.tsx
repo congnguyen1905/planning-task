@@ -75,7 +75,7 @@ export function CreateProjectModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fadeIn">
       {/* Modal backdrop click */}
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
 
