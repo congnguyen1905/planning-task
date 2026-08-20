@@ -8,6 +8,7 @@ import type { Account } from "@/lib/types";
 type ModalState =
   | { type: "login"; account: Account }
   | { type: "register" }
+  | { type: "directLogin" }
   | null;
 
 const COLOR_MAP: Record<Account["color"], string> = {
@@ -17,7 +18,6 @@ const COLOR_MAP: Record<Account["color"], string> = {
   mint: "#5da890",
 };
 
-// Removed sample mock accounts data
 const INITIAL_ACCOUNTS: Account[] = [];
 
 const CARD_POSITIONS = [
@@ -54,7 +54,9 @@ function getFirstName(name: string): string {
 export function AccountSelectorView() {
   const [accounts, setAccounts] = useState<Account[]>(INITIAL_ACCOUNTS);
   const [visibleAccounts, setVisibleAccounts] = useState<Account[]>(INITIAL_ACCOUNTS);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
+  const [inlineTab, setInlineTab] = useState<"login" | "register">("login");
 
   const [password, setPassword] = useState("");
   const [fullname, setFullname] = useState("");
@@ -66,18 +68,40 @@ export function AccountSelectorView() {
 
   const router = useRouter();
 
-  // Load registered accounts from localStorage on mount
+  // Load registered accounts from API / localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem("all_accounts");
-    if (stored) {
+    async function loadAccounts() {
+      let loadedAccounts: Account[] = [];
       try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAccounts(parsed);
-          setVisibleAccounts(shuffle(parsed));
+        const res = await fetch("/api/accounts");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+            loadedAccounts = data.accounts;
+          }
         }
       } catch {}
+
+      if (loadedAccounts.length === 0) {
+        const stored = localStorage.getItem("all_accounts");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              loadedAccounts = parsed;
+            }
+          } catch {}
+        }
+      }
+
+      if (loadedAccounts.length > 0) {
+        setAccounts(loadedAccounts);
+        setVisibleAccounts(shuffle(loadedAccounts));
+        localStorage.setItem("all_accounts", JSON.stringify(loadedAccounts));
+      }
+      setIsLoaded(true);
     }
+    loadAccounts();
   }, []);
 
   useEffect(() => {
@@ -112,6 +136,15 @@ export function AccountSelectorView() {
     setMessage("");
   };
 
+  const openDirectLogin = () => {
+    setModal({ type: "directLogin" });
+    setUsername("");
+    setPassword("");
+    setShowPassword(false);
+    setError("");
+    setMessage("");
+  };
+
   const closeModal = () => {
     setModal(null);
     setError("");
@@ -129,6 +162,51 @@ export function AccountSelectorView() {
     setError("");
     setMessage("Đăng nhập thành công!");
     setPassword("");
+    setTimeout(() => {
+      router.push("/");
+    }, 300);
+  };
+
+  const handleInlineLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
+      return;
+    }
+
+    let allAccs = [...accounts];
+    try {
+      const res = await fetch("/api/accounts");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+          allAccs = data.accounts;
+        }
+      }
+    } catch {}
+
+    const targetAccount = allAccs.find(
+      (acc) =>
+        acc.username.toLowerCase() === username.trim().toLowerCase() &&
+        acc.password === password.trim()
+    );
+
+    if (!targetAccount) {
+      setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+      return;
+    }
+
+    setError("");
+    setMessage("Đăng nhập thành công!");
+    localStorage.setItem("current_user", JSON.stringify(targetAccount));
+
+    if (!accounts.some((a) => a.id === targetAccount.id)) {
+      const updated = [...accounts, targetAccount];
+      setAccounts(updated);
+      localStorage.setItem("all_accounts", JSON.stringify(updated));
+    }
+
+    closeModal();
     setTimeout(() => {
       router.push("/");
     }, 300);
@@ -190,6 +268,61 @@ export function AccountSelectorView() {
     }, 300);
   };
 
+  const handleInlineRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullname.trim() || !username.trim() || !password.trim()) {
+      setError("Vui lòng điền đầy đủ thông tin.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Mật khẩu cần ít nhất 6 ký tự.");
+      return;
+    }
+    if (
+      accounts.some(
+        (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
+      )
+    ) {
+      setError("Username này đã được sử dụng.");
+      return;
+    }
+
+    const colors: Account["color"][] = ["coral", "blue", "gold", "mint"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const newAccount: Account = {
+      id: Date.now(),
+      fullname: fullname.trim(),
+      username: username.trim(),
+      password: password.trim(),
+      color: randomColor,
+    };
+
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAccount),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        setError(json.error || "Không thể đăng ký tài khoản trên máy chủ.");
+        return;
+      }
+    } catch {
+      // Fallback silently
+    }
+
+    const updatedAccounts = [...accounts, newAccount];
+    setAccounts(updatedAccounts);
+    localStorage.setItem("all_accounts", JSON.stringify(updatedAccounts));
+    localStorage.setItem("current_user", JSON.stringify(newAccount));
+    setMessage(`Đã tạo tài khoản cho ${newAccount.fullname}`);
+    setTimeout(() => {
+      router.push("/");
+    }, 300);
+  };
+
   return (
     <main className="min-h-screen relative overflow-hidden flex items-center justify-center p-6 bg-[var(--bg)] text-[var(--ink)]">
       {/* Decorative Orbits */}
@@ -204,15 +337,17 @@ export function AccountSelectorView() {
         </div>
 
         <p className="text-[11px] font-bold tracking-[0.2em] text-[var(--amber)] uppercase mb-2">
-          CHỌN TÀI KHOẢN
+          {visibleAccounts.length === 0 ? "ĐĂNG NHẬP HỆ THỐNG" : "CHỌN TÀI KHOẢN"}
         </p>
 
         <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight mb-3">
-          Chào mừng trở lại!
+          {visibleAccounts.length === 0 ? "Đăng nhập Planning Task" : "Chào mừng trở lại!"}
         </h1>
 
         <p className="text-[15px] text-[var(--ink-muted)] max-w-sm mx-auto mb-6 leading-relaxed">
-          Chọn một tài khoản bên dưới để đăng nhập hoặc tạo tài khoản mới.
+          {visibleAccounts.length === 0
+            ? "Chưa có tài khoản nào đăng nhập trước đó. Vui lòng đăng nhập hoặc tạo tài khoản mới bên dưới."
+            : "Chọn một tài khoản bên dưới để đăng nhập hoặc thực hiện đăng nhập / tạo tài khoản mới."}
         </p>
 
         {/* Global Feedback Banner */}
@@ -222,27 +357,167 @@ export function AccountSelectorView() {
           </div>
         )}
 
-        {/* Account Cards Grid Container */}
-        <div className="relative min-h-[350px] h-[560px] md:h-[520px] w-full max-w-[900px] mx-auto flex items-center justify-center">
-          {visibleAccounts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--hairline)] rounded-2xl bg-[var(--surface)]/60 max-w-md mx-auto shadow-sm">
-              <div className="w-16 h-16 rounded-full bg-[var(--hairline)]/40 text-[var(--ink-muted)] grid place-items-center text-2xl font-bold mb-3">
-                👤
-              </div>
-              <h3 className="text-lg font-bold text-[var(--ink)]">Chưa có tài khoản nào</h3>
-              <p className="text-sm text-[var(--ink-muted)] mt-1 mb-5">
-                Vui lòng tạo tài khoản mới để đăng nhập và bắt đầu sử dụng.
-              </p>
+        {/* Form or Account Cards */}
+        {!isLoaded ? (
+          <div className="min-h-[350px] flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-[var(--amber)] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : visibleAccounts.length === 0 ? (
+          <div className="w-full max-w-[420px] mx-auto p-7 md:p-8 border border-[var(--hairline)] rounded-2xl bg-[var(--surface)] text-[var(--ink)] shadow-xl relative z-20 text-left animate-in zoom-in-95 duration-200">
+            {/* Tabs header */}
+            <div className="flex border-b border-[var(--hairline)] mb-6">
               <button
-                onClick={openRegister}
                 type="button"
-                className="py-3 px-6 rounded-xl bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center gap-2"
+                onClick={() => {
+                  setInlineTab("login");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`flex-1 pb-3 text-center text-sm font-bold border-b-2 transition-colors cursor-pointer ${
+                  inlineTab === "login"
+                    ? "border-[var(--amber)] text-[var(--amber)]"
+                    : "border-transparent text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
               >
-                Tạo tài khoản ngay <span className="text-base">↗</span>
+                Đăng nhập
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setInlineTab("register");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`flex-1 pb-3 text-center text-sm font-bold border-b-2 transition-colors cursor-pointer ${
+                  inlineTab === "register"
+                    ? "border-[var(--amber)] text-[var(--amber)]"
+                    : "border-transparent text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                Đăng ký tài khoản
               </button>
             </div>
-          ) : (
-            visibleAccounts.map((account, index) => {
+
+            {inlineTab === "login" ? (
+              <form onSubmit={handleInlineLoginSubmit} className="grid gap-4">
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Tên đăng nhập (Username)
+                  </label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Nhập tên đăng nhập"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors"
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Mật khẩu
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] hover:text-[var(--ink)] text-xs font-medium cursor-pointer"
+                    >
+                      {showPassword ? "Ẩn" : "Hiện"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-[var(--danger)] font-medium mt-1">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                >
+                  Đăng nhập <span>→</span>
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleInlineRegisterSubmit} className="grid gap-4">
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Họ và tên
+                  </label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={fullname}
+                    onChange={(e) => setFullname(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors"
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Tên đăng nhập (Username)
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="ten-cua-ban"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors"
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Mật khẩu
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Tối thiểu 6 ký tự"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] hover:text-[var(--ink)] text-xs font-medium cursor-pointer"
+                    >
+                      {showPassword ? "Ẩn" : "Hiện"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-[var(--danger)] font-medium mt-1">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                >
+                  Tạo tài khoản & Đăng nhập <span>→</span>
+                </button>
+              </form>
+            )}
+          </div>
+        ) : (
+          <div className="relative min-h-[350px] h-[560px] md:h-[520px] w-full max-w-[900px] mx-auto flex items-center justify-center">
+            {visibleAccounts.map((account, index) => {
               const posClass = CARD_POSITIONS[index % CARD_POSITIONS.length];
               const colorHex = COLOR_MAP[account.color];
               const initials = getInitials(account.fullname);
@@ -273,13 +548,21 @@ export function AccountSelectorView() {
                   <span className="text-[var(--amber)] text-lg shrink-0">→</span>
                 </button>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
 
-        {/* Register Trigger Button */}
-        {visibleAccounts.length > 0 && (
-          <div className="mt-6">
+        {/* Footer Actions */}
+        {isLoaded && visibleAccounts.length > 0 && (
+          <div className="mt-6 flex items-center justify-center gap-6 flex-wrap">
+            <button
+              onClick={openDirectLogin}
+              type="button"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--amber)] hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              Đăng nhập tài khoản mới <span className="text-base">→</span>
+            </button>
+            <span className="text-[var(--hairline)]">|</span>
             <button
               onClick={openRegister}
               type="button"
@@ -307,7 +590,72 @@ export function AccountSelectorView() {
               ×
             </button>
 
-            {modal.type === "login" ? (
+            {modal.type === "directLogin" ? (
+              <form onSubmit={handleInlineLoginSubmit} className="grid gap-4">
+                <div className="text-center">
+                  <p className="text-[11px] font-bold tracking-[0.2em] text-[var(--amber)] uppercase">
+                    ĐĂNG NHẬP
+                  </p>
+
+                  <h2 className="text-2xl font-serif font-medium tracking-tight mt-1">
+                    Đăng nhập tài khoản
+                  </h2>
+
+                  <p className="text-sm text-[var(--ink-muted)] mt-1">
+                    Nhập thông tin tài khoản của bạn để tiếp tục.
+                  </p>
+                </div>
+
+                <div className="text-left grid gap-1.5 mt-2">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Tên đăng nhập (Username)
+                  </label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Nhập tên đăng nhập"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors"
+                  />
+                </div>
+
+                <div className="text-left grid gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink-muted)]">
+                    Mật khẩu
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--amber)] transition-colors pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] hover:text-[var(--ink)] text-xs font-medium cursor-pointer"
+                    >
+                      {showPassword ? "Ẩn" : "Hiện"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-[var(--danger)] font-medium mt-1">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                >
+                  Đăng nhập <span>→</span>
+                </button>
+              </form>
+            ) : modal.type === "login" ? (
               <form onSubmit={handleLoginSubmit} className="grid gap-4 text-center">
                 <div
                   style={{ backgroundColor: COLOR_MAP[modal.account.color] }}

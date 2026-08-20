@@ -9,6 +9,7 @@ import { TodoRow } from "@/components/TodoRow";
 import { CalendarView } from "@/components/CalendarView";
 import { ProjectList } from "@/components/ProjectList";
 import { CreateProjectModal } from "@/components/CreateProjectModal";
+import { EditProjectModal } from "@/components/EditProjectModal";
 import { AssignProjectModal } from "@/components/AssignProjectModal";
 import { CustomDateRangePicker } from "@/components/CustomDateRangePicker";
 import { DatePicker } from "@/components/DatePicker";
@@ -16,7 +17,7 @@ import { Button } from "@/components/Button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeContext } from "@/contexts/ThemeContext";
-import type { Todo } from "@/lib/types";
+import type { Todo, Project } from "@/lib/types";
 import {
   addDaysToDateKey,
   formatDateKey,
@@ -75,7 +76,9 @@ export default function Home() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [assigningTodo, setAssigningTodo] = useState<Todo | null>(null);
 
-  const { projects, addProject, deleteProject } = useProjects();
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  const { projects, addProject, updateProject, deleteProject } = useProjects();
 
   const {
     todos,
@@ -263,6 +266,15 @@ export default function Home() {
         }}
       />
 
+      <EditProjectModal
+        isOpen={editingProject !== null}
+        project={editingProject}
+        onClose={() => setEditingProject(null)}
+        onSave={async (id, name, description, color) => {
+          await updateProject(id, { name, description, color });
+        }}
+      />
+
       <AssignProjectModal
         isOpen={assigningTodo !== null}
         onClose={() => setAssigningTodo(null)}
@@ -287,6 +299,7 @@ export default function Home() {
               selectedProjectId={selectedProjectId}
               onSelectProject={setSelectedProjectId}
               onOpenCreateModal={() => setIsModalOpen(true)}
+              onOpenEditModal={(proj) => setEditingProject(proj)}
               onDeleteProject={async (id) => {
                 await deleteProject(id);
                 if (selectedProjectId === id) {
