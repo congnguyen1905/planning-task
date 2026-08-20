@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { formatDateKey, reconcileDateRange } from "@/lib/date";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "./Button";
+import { DatePicker } from "./DatePicker";
 import type { Project } from "@/lib/types";
 
 export function AddTodoForm({
@@ -89,39 +91,37 @@ export function AddTodoForm({
           </select>
         </label>
 
-        <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
-          <span className="font-mono text-[11px] uppercase tracking-wider">{t("start_date")}</span>
-          <input
-            type="date"
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-faint)]">{t("start_date")}</span>
+          <DatePicker
             value={startDate}
-            onChange={(e) => {
-              const next = reconcileDateRange(e.target.value, endDate, "start");
+            onChange={(val) => {
+              const next = reconcileDateRange(val, endDate, "start");
               setStartDate(next.startDate);
               setEndDate(next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
           />
-        </label>
-        <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
-          <span className="font-mono text-[11px] uppercase tracking-wider">{t("end_date")}</span>
-          <input
-            type="date"
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-faint)]">{t("end_date")}</span>
+          <DatePicker
             value={endDate}
-            onChange={(e) => {
-              const next = reconcileDateRange(startDate, e.target.value, "end");
+            onChange={(val) => {
+              const next = reconcileDateRange(startDate, val, "end");
               setStartDate(next.startDate);
               setEndDate(next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
           />
-        </label>
-        <button
+        </div>
+        <Button
           type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
           disabled={!text.trim() || !targetProjectId || busy}
-          className="w-full font-mono text-xs uppercase tracking-wider px-3 py-1.5 rounded-sm border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] disabled:hover:text-[var(--ink-muted)] transition-colors"
         >
           {t("add_button")}
-        </button>
+        </Button>
       </div>
     </form>
   );

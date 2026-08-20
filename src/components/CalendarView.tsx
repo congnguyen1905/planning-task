@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import type { Todo } from "@/lib/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Checkbox } from "./Checkbox";
 import {
   enumerateDateRange,
   formatDateKey,
@@ -321,20 +322,16 @@ export function CalendarView({
                           }
                         }}
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
+                          size="sm"
                           checked={row.done}
-                          onChange={(e) => {
-                            e.stopPropagation();
+                          onChange={(v: boolean) => {
                             if (row.isSub && row.parentId) {
-                              onToggleSubTodo?.(row.parentId, row.key, e.target.checked);
+                              onToggleSubTodo?.(row.parentId, row.key, v);
                             } else {
-                              onToggleTodo?.(row.key, e.target.checked);
+                              onToggleTodo?.(row.key, v);
                             }
                           }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-3.5 w-3.5 rounded border border-[var(--hairline)] bg-[var(--bg)] accent-[var(--amber)] cursor-pointer shrink-0"
-                          title={row.done ? t("status_done") : t("status_not_started")}
                         />
 
                         {row.projectId && projectsMap?.[row.projectId] ? (

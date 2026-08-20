@@ -9,8 +9,12 @@ import { CalendarView } from "@/components/CalendarView";
 import { ProjectList } from "@/components/ProjectList";
 import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { AssignProjectModal } from "@/components/AssignProjectModal";
+import { CustomDateRangePicker } from "@/components/CustomDateRangePicker";
+import { DatePicker } from "@/components/DatePicker";
+import { Button } from "@/components/Button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useThemeContext } from "@/contexts/ThemeContext";
 import type { Todo } from "@/lib/types";
 import {
   addDaysToDateKey,
@@ -29,6 +33,9 @@ function startOfWeek(date: Date): Date {
 
 export default function Home() {
   const { language, t } = useLanguage();
+  const { settings } = useThemeContext();
+  const isClassic = settings.style === "classic";
+
   const todayKey = formatDateKey(new Date());
   const [rangeStart, setRangeStart] = useState(formatDateKey(startOfWeek(new Date())));
   const [rangeEnd, setRangeEnd] = useState(addDaysToDateKey(formatDateKey(startOfWeek(new Date())), 6));
@@ -36,6 +43,7 @@ export default function Home() {
   const [useDataApi, setUseDataApi] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [assigningTodo, setAssigningTodo] = useState<Todo | null>(null);
 
   const { projects, addProject, deleteProject } = useProjects();
@@ -118,6 +126,74 @@ export default function Home() {
 
   const selectedProjectObj = projects.find((p) => p.id === selectedProjectId);
 
+  const headerComponent = (
+    <header className={isClassic ? "mb-6 pb-6 border-b border-[var(--hairline)] flex flex-wrap items-start justify-between gap-6" : ""}>
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.15em] text-[var(--amber)] mb-2">
+          {formatDateLabel(rangeStart, language)} — {formatDateLabel(rangeEnd, language)}
+        </p>
+        <h1 className="font-display italic text-4xl text-[var(--ink)]">
+          {t("app_title")}
+        </h1>
+        <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-sm text-[var(--ink-faint)]">
+          <span>
+            {visibleTodos.length === 0
+              ? t("no_tasks")
+              : `${totalDone}/${visibleTodos.length} ${t("tasks_completed")}${
+                  lastSync ? ` · ${language === "vi" ? "đồng bộ lúc" : "synced at"} ${lastSync.toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US")}` : ""
+                }`}
+          </span>
+          {selectedProjectObj ? (
+            <span className="font-mono text-xs text-[var(--amber)] flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: selectedProjectObj.color || "#f59e0b" }} />
+              {selectedProjectObj.name}
+            </span>
+          ) : selectedProjectId === "unassigned" ? (
+            <span className="font-mono text-xs text-amber-500 flex items-center gap-1.5 italic">
+              <span className="h-2 w-2 rounded-full border border-dashed border-amber-500" />
+              {t("unassigned_project")}
+            </span>
+          ) : null}
+        </div>
+        <label className="mt-3 inline-flex items-center gap-2 text-sm text-[var(--ink-faint)]">
+          <input
+            type="checkbox"
+            checked={useDataApi}
+            onChange={(e) => setUseDataApi(e.target.checked)}
+            className="h-4 w-4 rounded border border-[var(--hairline)] bg-[var(--bg)] accent-[var(--amber)] cursor-pointer"
+          />
+          <span>{t("use_data_api")}</span>
+        </label>
+      </div>
+
+      {isClassic && (
+        <div className="flex flex-wrap items-center justify-between gap-6 w-full lg:w-auto lg:self-center">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[var(--ink-faint)]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--status-not-started)]" />
+              {t("status_not_started")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--status-in-progress)]" />
+              {t("status_in_progress")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--status-overdue)]" />
+              {t("status_overdue")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--status-done)]" />
+              {t("status_done")}
+            </span>
+          </div>
+          <p className="text-xs italic text-[var(--ink-faint)] font-mono max-w-xs text-right hidden sm:block">
+            {t("drag_hint")}
+          </p>
+        </div>
+      )}
+    </header>
+  );
+
   return (
     <main className="min-h-screen bg-[var(--bg)]">
       <LanguageSwitcher />
@@ -143,45 +219,13 @@ export default function Home() {
         }}
       />
 
-      <div className="w-full px-4 py-10 sm:px-8 lg:py-14 xl:px-12">
+      <div className={`w-full px-4 sm:px-8 xl:px-12 ${isClassic ? "py-6 lg:py-8" : "py-10 lg:py-14"}`}>
+        {isClassic && headerComponent}
+
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[340px_1fr] lg:items-start">
           {/* LEFT — sidebar: header + bộ lọc dự án + bộ lọc ngày + toggle view + form thêm việc */}
-          <aside className="space-y-6 lg:sticky lg:top-10">
-            <header>
-              <p className="font-mono text-xs uppercase tracking-[0.15em] text-[var(--amber)] mb-2">
-                {formatDateLabel(rangeStart, language)} — {formatDateLabel(rangeEnd, language)}
-              </p>
-              <h1 className="font-display italic text-4xl text-[var(--ink)]">
-                {t("app_title")}
-              </h1>
-              {selectedProjectObj ? (
-                <p className="mt-1 font-mono text-xs text-[var(--amber)] flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: selectedProjectObj.color || "#f59e0b" }} />
-                  {selectedProjectObj.name}
-                </p>
-              ) : selectedProjectId === "unassigned" ? (
-                <p className="mt-1 font-mono text-xs text-amber-500 flex items-center gap-1.5 italic">
-                  <span className="h-2 w-2 rounded-full border border-dashed border-amber-500" />
-                  {t("unassigned_project")}
-                </p>
-              ) : null}
-              <p className="mt-2 text-sm text-[var(--ink-faint)] font-mono">
-                {visibleTodos.length === 0
-                  ? t("no_tasks")
-                  : `${totalDone}/${visibleTodos.length} ${t("tasks_completed")}${
-                      lastSync ? ` · ${language === "vi" ? "đồng bộ lúc" : "synced at"} ${lastSync.toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US")}` : ""
-                    }`}
-              </p>
-              <label className="mt-4 inline-flex items-center gap-2 text-sm text-[var(--ink-faint)]">
-                <input
-                  type="checkbox"
-                  checked={useDataApi}
-                  onChange={(e) => setUseDataApi(e.target.checked)}
-                  className="h-4 w-4 rounded border border-[var(--hairline)] bg-[var(--bg)] accent-[var(--amber)]"
-                />
-                <span>{t("use_data_api")}</span>
-              </label>
-            </header>
+          <aside className="space-y-6 lg:sticky lg:top-6">
+            {!isClassic && headerComponent}
 
             {/* PROJECTS SECTION */}
             <ProjectList
@@ -200,81 +244,108 @@ export default function Home() {
             />
 
             {/* DATE RANGE SECTION */}
-            <div className="rounded-sm border border-[var(--hairline)] p-3 space-y-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => shiftRange(-1)}
-                  className="flex-1 rounded-sm border border-[var(--hairline)] px-2 py-1 text-sm text-[var(--ink-muted)] hover:border-[var(--amber)] transition-colors"
+            <div className="rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                  📅 {language === "vi" ? "Khoảng thời gian" : "Date Filter"}
+                </span>
+                <Button
+                  variant="soft"
+                  color="primary"
+                  size="sm"
+                  onClick={() => setIsDatePickerOpen(true)}
                 >
-                  {t("previous_day")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => shiftRange(1)}
-                  className="flex-1 rounded-sm border border-[var(--hairline)] px-2 py-1 text-sm text-[var(--ink-muted)] hover:border-[var(--amber)] transition-colors"
-                >
-                  {t("next_day")}
-                </button>
+                  {language === "vi" ? "Chọn Nhanh" : "Quick Pick"}
+                </Button>
               </div>
 
-              <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
-                <span className="font-mono text-[11px] uppercase tracking-wider">{t("range_from")}</span>
-                <input
-                  type="date"
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="sm"
+                  fullWidth
+                  onClick={() => shiftRange(-1)}
+                >
+                  {t("previous_day")}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="sm"
+                  fullWidth
+                  onClick={() => shiftRange(1)}
+                >
+                  {t("next_day")}
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-faint)]">{t("range_from")}</span>
+                <DatePicker
                   value={rangeStart}
-                  onChange={(e) => setRange(e.target.value, rangeEnd)}
-                  className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
+                  onChange={(val) => setRange(val, rangeEnd)}
                 />
-              </label>
-              <label className="flex items-center justify-between gap-2 text-sm text-[var(--ink-faint)]">
-                <span className="font-mono text-[11px] uppercase tracking-wider">{t("range_to")}</span>
-                <input
-                  type="date"
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-faint)]">{t("range_to")}</span>
+                <DatePicker
                   value={rangeEnd}
-                  onChange={(e) => setRange(rangeStart, e.target.value)}
-                  className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
+                  onChange={(val) => setRange(rangeStart, val)}
                 />
-              </label>
+              </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="soft"
+                  color="inherit"
+                  size="sm"
+                  fullWidth
                   onClick={selectThisWeek}
-                  className="flex-1 rounded-sm border border-[var(--hairline)] px-2 py-1 text-xs text-[var(--ink-muted)] hover:border-[var(--amber)] transition-colors"
                 >
                   {t("this_week")}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="soft"
+                  color="inherit"
+                  size="sm"
+                  fullWidth
                   onClick={selectThisMonth}
-                  className="flex-1 rounded-sm border border-[var(--hairline)] px-2 py-1 text-xs text-[var(--ink-muted)] hover:border-[var(--amber)] transition-colors"
                 >
                   {t("this_month")}
-                </button>
+                </Button>
               </div>
             </div>
 
+            <CustomDateRangePicker
+              open={isDatePickerOpen}
+              startDate={rangeStart}
+              endDate={rangeEnd}
+              title={language === "vi" ? "Chọn khoảng thời gian Lịch" : "Select Date Range Filter"}
+              onClose={() => setIsDatePickerOpen(false)}
+              onApply={(start, end) => setRange(start, end)}
+            />
+
             {/* VIEW SWITCHER */}
-            <div className="inline-flex w-full rounded-sm border border-[var(--hairline)] p-0.5">
-              <button
-                type="button"
+            <div className="inline-flex w-full rounded-xl border border-[var(--hairline)] bg-[var(--surface-raised)]/60 p-1 gap-1">
+              <Button
+                fullWidth
+                size="sm"
+                variant={view === "list" ? "contained" : "text"}
+                color={view === "list" ? "primary" : "inherit"}
                 onClick={() => setView("list")}
-                className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors ${
-                  view === "list" ? "bg-[var(--amber)] text-[#1c1b19]" : "text-[var(--ink-faint)]"
-                }`}
               >
                 {t("view_list")}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                fullWidth
+                size="sm"
+                variant={view === "calendar" ? "contained" : "text"}
+                color={view === "calendar" ? "primary" : "inherit"}
                 onClick={() => setView("calendar")}
-                className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors ${
-                  view === "calendar" ? "bg-[var(--amber)] text-[#1c1b19]" : "text-[var(--ink-faint)]"
-                }`}
               >
                 {t("view_calendar")}
-              </button>
+              </Button>
             </div>
 
             {/* ADD TODO FORM */}

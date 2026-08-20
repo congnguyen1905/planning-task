@@ -1,56 +1,156 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #1c1b19;
-  --surface: #242220;
-  --surface-raised: #2b2925;
-  --hairline: #3a3730;
-  --ink: #ede8de;
-  --ink-muted: #a39a8c;
-  --ink-faint: #6f665a;
-  --amber: #e8a33d;
-  --sage: #7a9a7e;
-  --sage-dim: #4d5f4f;
-  --danger: #c1654f;
+  /* Exact vite-js Dark Mode Palette (Minimals UI Kit v6) */
+  --bg: #141A21;           /* grey 900 */
+  --surface: #1C252E;      /* grey 800 (Paper/Card) */
+  --surface-raised: #28323D; /* neutral dark background */
+  --hairline: rgba(145, 158, 171, 0.2); /* divider (grey 500 @ 20%) */
+  --ink: #FFFFFF;          /* text primary */
+  --ink-muted: #919EAB;    /* text secondary (grey 500) */
+  --ink-faint: #637381;    /* text disabled/faint (grey 600) */
 
-  /* Trạng thái công việc trên lịch/gantt */
-  --status-not-started: #6fae74;   /* xanh lá — chưa thực hiện */
-  --status-not-started-dim: #2f4a34;
-  --status-in-progress: #5b96c9;   /* xanh dương — đang xử lý */
-  --status-in-progress-dim: #2c4258;
-  --status-overdue: #d1594a;       /* đỏ — quá hạn chưa xong */
-  --status-overdue-dim: #4e2a26;
-  --status-done: #8a8272;          /* xám — đã xong */
-  --status-done-dim: #3a3730;
+  /* Primary Default Color (vite-js Emerald Green) */
+  --amber: #00A76F;
+  --amber-light: #5BE49B;
+  --amber-dark: #007867;
+
+  /* Accent & Status Colors from vite-js */
+  --sage: #22C55E;         /* success.main */
+  --sage-dim: rgba(34, 197, 94, 0.16);
+  --danger: #FF5630;       /* error.main */
+
+  /* Task Status colors matching vite-js semantics */
+  --status-not-started: #22C55E;   /* Green — chưa thực hiện */
+  --status-not-started-dim: rgba(34, 197, 94, 0.16);
+  --status-in-progress: #00B8D9;   /* Cyan Info — đang xử lý */
+  --status-in-progress-dim: rgba(0, 184, 217, 0.16);
+  --status-overdue: #FF5630;       /* Red Error — quá hạn */
+  --status-overdue-dim: rgba(255, 86, 48, 0.16);
+  --status-done: #919EAB;          /* Grey — đã xong */
+  --status-done-dim: rgba(145, 158, 171, 0.16);
+
+  /* Border Radius matching vite-js (8px base, 16px cards) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+/* Exact vite-js Light Mode Palette */
+[data-theme="light"] {
+  --bg: #F4F6F8;           /* grey 200 */
+  --surface: #FFFFFF;      /* paper */
+  --surface-raised: #F9FAFB; /* grey 100 */
+  --hairline: rgba(145, 158, 171, 0.2);
+  --ink: #1C252E;          /* text primary (grey 800) */
+  --ink-muted: #637381;    /* text secondary (grey 600) */
+  --ink-faint: #919EAB;    /* text disabled (grey 500) */
+
+  --status-not-started-dim: rgba(34, 197, 94, 0.12);
+  --status-in-progress-dim: rgba(0, 184, 217, 0.12);
+  --status-overdue-dim: rgba(255, 86, 48, 0.12);
+  --status-done-dim: rgba(145, 158, 171, 0.12);
+}
+
+/* High Contrast Mode Overrides */
+[data-contrast="bold"] {
+  --hairline: rgba(145, 158, 171, 0.4);
+}
+[data-theme="light"][data-contrast="bold"] {
+  --hairline: rgba(145, 158, 171, 0.36);
+  --bg: #DFE3E8;           /* grey 300 */
+  --surface-raised: #F4F6F8;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--ink);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
-  --font-mono: var(--font-mono);
+  --font-sans: var(--font-sans), "Public Sans", "Inter", system-ui, sans-serif;
+  --font-display: var(--font-sans), "Public Sans", "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-sans), "Public Sans", "Inter", system-ui, sans-serif;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), "Public Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force Public Sans / Inter typography throughout utility classes */
+.font-display, .font-mono {
+  font-family: var(--font-sans), "Public Sans", "Inter", sans-serif !important;
+}
+
+/* Card & Div Border Radius overrides to match vite-js (8px - 16px rounded corners) */
+.rounded-sm {
+  border-radius: 10px !important;
+}
+.rounded-md {
+  border-radius: 12px !important;
+}
+.rounded-lg {
+  border-radius: 14px !important;
+}
+.rounded-xl {
+  border-radius: 16px !important;
+}
+.rounded-2xl {
+  border-radius: 16px !important;
+}
+
+/* Classic Mode Overrides (Sharp corners & IBM Plex Mono font) */
+[data-style="classic"],
+[data-style="classic"] body,
+[data-style="classic"] input,
+[data-style="classic"] button,
+[data-style="classic"] select,
+[data-style="classic"] textarea,
+[data-style="classic"] .font-display,
+[data-style="classic"] .font-mono,
+[data-style="classic"] .font-sans {
+  font-family: var(--font-ibm-plex-mono, "IBM Plex Mono"), "IBM Plex Mono Fallback", monospace !important;
+}
+
+[data-style="classic"] div,
+[data-style="classic"] button,
+[data-style="classic"] input,
+[data-style="classic"] select,
+[data-style="classic"] section,
+[data-style="classic"] aside,
+[data-style="classic"] article,
+[data-style="classic"] main,
+[data-style="classic"] nav,
+[data-style="classic"] form,
+[data-style="classic"] header,
+[data-style="classic"] table,
+[data-style="classic"] th,
+[data-style="classic"] td,
+[data-style="classic"] .rounded,
+[data-style="classic"] .rounded-sm,
+[data-style="classic"] .rounded-md,
+[data-style="classic"] .rounded-lg,
+[data-style="classic"] .rounded-xl,
+[data-style="classic"] .rounded-2xl,
+[data-style="classic"] .check-box {
+  border-radius: 0px !important;
 }
 
 ::selection {
   background: var(--amber);
-  color: #1c1b19;
+  color: #FFFFFF;
 }
 
-/* Custom checkbox: a hand-drawn-feeling square that fills like a stamp */
+/* Custom checkbox: matching vite-js styled checkbox */
 .check-box {
   appearance: none;
   width: 1.15rem;
   height: 1.15rem;
   min-width: 1.15rem;
   border: 1.5px solid var(--ink-faint);
-  border-radius: 3px;
+  border-radius: 4px;
   background: transparent;
   cursor: pointer;
   position: relative;
@@ -62,18 +162,18 @@ body {
 }
 
 .check-box:checked {
-  background: var(--sage-dim);
-  border-color: var(--sage);
+  background: var(--amber);
+  border-color: var(--amber);
 }
 
 .check-box:checked::after {
   content: "";
   position: absolute;
-  left: 3px;
-  top: -1px;
+  left: 4px;
+  top: 1px;
   width: 5px;
   height: 9px;
-  border: solid var(--sage);
+  border: solid #FFFFFF;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -85,8 +185,8 @@ body {
 }
 
 .check-box.sub:checked::after {
-  left: 2px;
-  top: -1px;
+  left: 3px;
+  top: 0px;
   width: 4px;
   height: 7px;
 }

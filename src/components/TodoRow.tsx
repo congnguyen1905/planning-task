@@ -5,6 +5,8 @@ import type { Todo } from "@/lib/types";
 import { SubTodoRow } from "./SubTodoRow";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isWithinFilterRange, reconcileDateRange } from "@/lib/date";
+import { Checkbox } from "./Checkbox";
+import { DatePicker } from "./DatePicker";
 
 export function TodoRow({
   todo,
@@ -65,11 +67,9 @@ export function TodoRow({
   return (
     <div className="border-b border-[var(--hairline)] last:border-b-0">
       <div className="group flex items-center gap-3 py-3">
-        <input
-          type="checkbox"
-          className="check-box"
+        <Checkbox
           checked={todo.done}
-          onChange={(e) => onToggle(e.target.checked)}
+          onChange={(v) => onToggle(v)}
         />
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {projectName ? (
@@ -105,37 +105,23 @@ export function TodoRow({
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <input
-            type="date"
+        <div className="flex items-center gap-1.5">
+          <DatePicker
             value={todo.startDate}
             disabled={todo.subtodos.length > 0}
-            title={
-              todo.subtodos.length > 0
-                ? "Ngày bắt đầu tự động tính theo Subtask"
-                : undefined
-            }
-            onChange={(e) => {
-              const next = reconcileDateRange(e.target.value, todo.endDate, "start");
+            onChange={(val) => {
+              const next = reconcileDateRange(val, todo.endDate, "start");
               onChangeDateRange(next.startDate, next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)] disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <span className="text-[10px] text-[var(--ink-faint)]">→</span>
-          <input
-            type="date"
+          <DatePicker
             value={todo.endDate}
             disabled={todo.subtodos.length > 0}
-            title={
-              todo.subtodos.length > 0
-                ? "Ngày kết thúc tự động tính theo Subtask"
-                : undefined
-            }
-            onChange={(e) => {
-              const next = reconcileDateRange(todo.startDate, e.target.value, "end");
+            onChange={(val) => {
+              const next = reconcileDateRange(todo.startDate, val, "end");
               onChangeDateRange(next.startDate, next.endDate);
             }}
-            className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)] disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -187,27 +173,23 @@ export function TodoRow({
               placeholder={t("add_subtask_placeholder")}
               className="flex-1 bg-transparent text-sm py-1 text-[var(--ink-muted)] placeholder:text-[var(--ink-faint)] focus:outline-none border-b border-transparent focus:border-[var(--hairline)] transition-colors"
             />
-            <div className="flex items-center gap-1">
-              <input
-                type="date"
+            <div className="flex items-center gap-1.5">
+              <DatePicker
                 value={subStartDate}
-                onChange={(e) => {
-                  const next = reconcileDateRange(e.target.value, subEndDate, "start");
+                onChange={(val) => {
+                  const next = reconcileDateRange(val, subEndDate, "start");
                   setSubStartDate(next.startDate);
                   setSubEndDate(next.endDate);
                 }}
-                className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
               />
               <span className="text-[10px] text-[var(--ink-faint)]">→</span>
-              <input
-                type="date"
+              <DatePicker
                 value={subEndDate}
-                onChange={(e) => {
-                  const next = reconcileDateRange(subStartDate, e.target.value, "end");
+                onChange={(val) => {
+                  const next = reconcileDateRange(subStartDate, val, "end");
                   setSubStartDate(next.startDate);
                   setSubEndDate(next.endDate);
                 }}
-                className="rounded-sm border border-[var(--hairline)] bg-transparent px-2 py-1 text-[11px] text-[var(--ink-muted)]"
               />
             </div>
           </form>

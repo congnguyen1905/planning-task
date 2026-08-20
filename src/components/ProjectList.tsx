@@ -4,6 +4,7 @@ import { ReactElement } from "react";
 import type { Project } from "@/lib/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DEFAULT_PROJECT } from "@/lib/serverStore";
+import { Button } from "./Button";
 
 interface ProjectListProps {
   projects: Project[];
@@ -32,13 +33,14 @@ export function ProjectList({
         <h3 className="font-mono text-xs uppercase tracking-[0.15em] text-[var(--amber)]">
           {t("projects_title")}
         </h3>
-        <button
-          type="button"
+        <Button
+          variant="soft"
+          color="primary"
+          size="sm"
           onClick={onOpenCreateModal}
-          className="rounded border border-[var(--amber)] px-2 py-0.5 text-xs font-mono text-[var(--amber)] hover:bg-[var(--amber)] hover:text-[#1c1b19] transition-colors"
         >
           {t("new_project_btn")}
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-1 max-h-48 overflow-y-auto pr-1">

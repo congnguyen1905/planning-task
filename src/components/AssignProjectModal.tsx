@@ -3,6 +3,7 @@
 import { useState, useEffect, ReactElement } from "react";
 import type { Todo, Project } from "@/lib/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "./Button";
 
 interface AssignProjectModalProps {
   isOpen: boolean;
@@ -108,20 +109,23 @@ export function AssignProjectModal({
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--hairline)]">
-            <button
-              type="button"
+            <Button
+              variant="outlined"
+              color="inherit"
+              size="sm"
               onClick={onClose}
-              className="rounded border border-[var(--hairline)] px-4 py-2 text-sm text-[var(--ink-muted)] hover:bg-[var(--hairline)]/20 transition-colors"
             >
               {t("cancel")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="contained"
+              color="primary"
+              size="sm"
               disabled={isSubmitting || !selectedProjectId}
-              className="rounded bg-[var(--amber)] px-4 py-2 text-sm font-semibold text-[#1c1b19] disabled:opacity-50 transition-opacity hover:opacity-90"
             >
               {isSubmitting ? t("loading") : t("save")}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
