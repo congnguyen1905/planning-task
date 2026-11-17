@@ -65,6 +65,7 @@ export function AccountSelectorView() {
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
 
@@ -150,21 +151,63 @@ export function AccountSelectorView() {
     setError("");
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const submitLogin = async (
+    targetUsername: string,
+    targetPassword: string,
+    options: { syncAccountsList?: boolean; closeModalOnSuccess?: boolean } = {}
+  ) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: targetUsername,
+          password: targetPassword,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.account) {
+        setError(json?.error || "Tên đăng nhập hoặc mật khẩu không chính xác.");
+        return;
+      }
+
+      const targetAccount: Account = json.account;
+      localStorage.setItem("current_user", JSON.stringify(targetAccount));
+
+      if (options.syncAccountsList && !accounts.some((a) => a.id === targetAccount.id)) {
+        const updated = [...accounts, targetAccount];
+        setAccounts(updated);
+        localStorage.setItem("all_accounts", JSON.stringify(updated));
+      }
+
+      setError("");
+      setMessage("Đăng nhập thành công!");
+      setPassword("");
+      if (options.closeModalOnSuccess) {
+        closeModal();
+      }
+      setTimeout(() => {
+        router.push("/");
+      }, 300);
+    } catch {
+      setError("Không thể kết nối tới máy chủ để đăng nhập.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {
       setError("Vui lòng nhập mật khẩu.");
       return;
     }
-    if (modal?.type === "login") {
-      localStorage.setItem("current_user", JSON.stringify(modal.account));
+    if (modal?.type !== "login") {
+      return;
     }
-    setError("");
-    setMessage("Đăng nhập thành công!");
-    setPassword("");
-    setTimeout(() => {
-      router.push("/");
-    }, 300);
+    await submitLogin(modal.account.username, password);
   };
 
   const handleInlineLoginSubmit = async (e: React.FormEvent) => {
@@ -173,154 +216,84 @@ export function AccountSelectorView() {
       setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
       return;
     }
+    await submitLogin(username.trim(), password, {
+      syncAccountsList: true,
+      closeModalOnSuccess: true,
+    });
+  };
 
-    let allAccs = [...accounts];
-    try {
-      const res = await fetch("/api/accounts");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.accounts) && data.accounts.length > 0) {
-          allAccs = data.accounts;
-        }
-      }
-    } catch {}
-
-    const targetAccount = allAccs.find(
-      (acc) =>
-        acc.username.toLowerCase() === username.trim().toLowerCase() &&
-        acc.password === password.trim()
-    );
-
-    if (!targetAccount) {
-      setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+  const submitRegistration = async (closeOnSuccess: boolean) => {
+    if (isSubmitting) return;
+    if (!fullname.trim() || !username.trim() || !password.trim()) {
+      setError("Vui lòng điền đầy đủ thông tin.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Mật khẩu cần ít nhất 6 ký tự.");
+      return;
+    }
+    if (
+      accounts.some(
+        (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
+      )
+    ) {
+      setError("Username này đã được sử dụng.");
       return;
     }
 
-    setError("");
-    setMessage("Đăng nhập thành công!");
-    localStorage.setItem("current_user", JSON.stringify(targetAccount));
+    const colors: Account["color"][] = ["coral", "blue", "gold", "mint"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-    if (!accounts.some((a) => a.id === targetAccount.id)) {
-      const updated = [...accounts, targetAccount];
-      setAccounts(updated);
-      localStorage.setItem("all_accounts", JSON.stringify(updated));
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullname: fullname.trim(),
+          username: username.trim(),
+          password,
+          color: randomColor,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json?.account) {
+        setError(json?.error || "Không thể đăng ký tài khoản trên máy chủ.");
+        return;
+      }
+
+      const savedAccount: Account = json.account;
+      const updatedAccounts: Account[] = Array.isArray(json.accounts)
+        ? json.accounts
+        : [...accounts, savedAccount];
+      setAccounts(updatedAccounts);
+      localStorage.setItem("all_accounts", JSON.stringify(updatedAccounts));
+      localStorage.setItem("current_user", JSON.stringify(savedAccount));
+      if (closeOnSuccess) {
+        closeModal();
+      }
+      setError("");
+      setPassword("");
+      setMessage(`Đã tạo tài khoản cho ${savedAccount.fullname}`);
+      setTimeout(() => {
+        router.push("/");
+      }, 300);
+    } catch {
+      setError("Không thể kết nối tới máy chủ để đăng ký.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    closeModal();
-    setTimeout(() => {
-      router.push("/");
-    }, 300);
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullname.trim() || !username.trim() || !password.trim()) {
-      setError("Vui lòng điền đầy đủ thông tin.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Mật khẩu cần ít nhất 6 ký tự.");
-      return;
-    }
-    if (
-      accounts.some(
-        (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
-      )
-    ) {
-      setError("Username này đã được sử dụng.");
-      return;
-    }
-
-    const colors: Account["color"][] = ["coral", "blue", "gold", "mint"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const newAccount: Account = {
-      id: Date.now(),
-      fullname: fullname.trim(),
-      username: username.trim(),
-      password: password.trim(),
-      color: randomColor,
-    };
-
-    try {
-      const res = await fetch("/api/accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAccount),
-      });
-
-      if (!res.ok) {
-        const json = await res.json();
-        setError(json.error || "Không thể đăng ký tài khoản trên máy chủ.");
-        return;
-      }
-    } catch {
-      // Fallback silently if offline/error
-    }
-
-    const updatedAccounts = [...accounts, newAccount];
-    setAccounts(updatedAccounts);
-    localStorage.setItem("all_accounts", JSON.stringify(updatedAccounts));
-    localStorage.setItem("current_user", JSON.stringify(newAccount));
-    closeModal();
-    setMessage(`Đã tạo tài khoản cho ${newAccount.fullname}`);
-    setTimeout(() => {
-      router.push("/");
-    }, 300);
+    await submitRegistration(true);
   };
 
   const handleInlineRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullname.trim() || !username.trim() || !password.trim()) {
-      setError("Vui lòng điền đầy đủ thông tin.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Mật khẩu cần ít nhất 6 ký tự.");
-      return;
-    }
-    if (
-      accounts.some(
-        (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
-      )
-    ) {
-      setError("Username này đã được sử dụng.");
-      return;
-    }
-
-    const colors: Account["color"][] = ["coral", "blue", "gold", "mint"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const newAccount: Account = {
-      id: Date.now(),
-      fullname: fullname.trim(),
-      username: username.trim(),
-      password: password.trim(),
-      color: randomColor,
-    };
-
-    try {
-      const res = await fetch("/api/accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAccount),
-      });
-
-      if (!res.ok) {
-        const json = await res.json();
-        setError(json.error || "Không thể đăng ký tài khoản trên máy chủ.");
-        return;
-      }
-    } catch {
-      // Fallback silently
-    }
-
-    const updatedAccounts = [...accounts, newAccount];
-    setAccounts(updatedAccounts);
-    localStorage.setItem("all_accounts", JSON.stringify(updatedAccounts));
-    localStorage.setItem("current_user", JSON.stringify(newAccount));
-    setMessage(`Đã tạo tài khoản cho ${newAccount.fullname}`);
-    setTimeout(() => {
-      router.push("/");
-    }, 300);
+    await submitRegistration(false);
   };
 
   return (
@@ -444,7 +417,8 @@ export function AccountSelectorView() {
 
                 <button
                   type="submit"
-                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Đăng nhập <span>→</span>
                 </button>
@@ -508,7 +482,8 @@ export function AccountSelectorView() {
 
                 <button
                   type="submit"
-                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Tạo tài khoản & Đăng nhập <span>→</span>
                 </button>
@@ -650,7 +625,8 @@ export function AccountSelectorView() {
 
                 <button
                   type="submit"
-                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Đăng nhập <span>→</span>
                 </button>
@@ -713,7 +689,8 @@ export function AccountSelectorView() {
 
                 <button
                   type="submit"
-                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Tiếp tục <span>→</span>
                 </button>
@@ -791,7 +768,8 @@ export function AccountSelectorView() {
 
                 <button
                   type="submit"
-                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-2 py-3 px-4 rounded-lg bg-[var(--amber)] text-white font-bold text-sm shadow-md shadow-[var(--amber)]/30 hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Tạo tài khoản <span>→</span>
                 </button>
